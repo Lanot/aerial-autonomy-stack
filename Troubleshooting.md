@@ -1,5 +1,22 @@
-#1. Docker: could not select device driver “” with capabilities: [[gpu]].
---------
+#1. Docker: Error response from daemon: endpoint with name ground-container-inst0 already exists in network aas-air-network-inst0
+------------------------------------------------------------------------------------------------------------------------
+```
+sudo systemctl restart docker
+```
+
+
+#2. Docker: permission denied while trying to connect to the docker API at unix:///var/run/docker.sock
+------------------------------------------------------------------------------------------------------------------------
+
+```
+sudo groupadd docker # if not exists
+sudo usermod -aG docker ${USER}
+sudo chmod 666 /var/run/docker.sock
+sudo systemctl restart docker
+```
+
+#3. Docker: could not select device driver “” with capabilities: [[gpu]].
+--------------------------------------------------------------------------------------------------------------------
 See: https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html
 
 Install the prerequisites for the instructions below:
