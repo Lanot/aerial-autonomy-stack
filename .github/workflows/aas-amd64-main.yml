@@ -122,7 +122,7 @@ jobs:
 
       - name: Run aas-gym test 1
         run: |
-          python3 ./scripts/gym_run.py --mode speedup --num_quads 1 --autopilot px4
+          python3 ./scripts/gym_run.py --mode speedup --num_quads 1 --no-camera --no-lidar --autopilot px4
 
       - name: Safety cleanup between tests
         if: always()

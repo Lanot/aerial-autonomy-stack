@@ -12,14 +12,14 @@ jobs:
       packages: write
 
     steps:
-      - name: Prune images older than 2 weeks except latest
+      - name: Prune images older than 10 days (except latest)
         uses: snok/container-retention-policy@v3.0.0
         with:
           image-names: |
             aircraft-image
             ground-image
             simulation-image
-          cut-off: 14d
+          cut-off: 10d
           skip-tags: latest
           keep-at-least: 1
           account-type: personal
