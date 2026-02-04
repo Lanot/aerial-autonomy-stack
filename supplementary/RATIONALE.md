@@ -53,6 +53,8 @@ For even more resources, check out [`aerial_robotic_landscape`](https://github.c
 
 ### LiDAR-inertial Odometry and SLAM
 
+> TBD
+
 - [ ] Add [SuperOdom](https://github.com/superxslam/SuperOdom) baseline
 - [ ] Add [SPARK-FAST-LIO](https://github.com/MIT-SPARK/spark-fast-lio) baseline
 - [ ] Create a suitable, obstacle-rich 3D world.sdf for LIO-based navigation and mapping
@@ -72,7 +74,7 @@ TBD
 
 ### Dependency Management
 
-PRs to update dependencies to their latest stable release (or this list) are welcome
+> PRs to update these dependencies to their latest stable release are always welcome
 
 - [x] Host OS: [Ubuntu 22.04/24.04 (LTS, ESM 4/2034)](https://ubuntu.com/about/release-cycle)
 - [x] Jetson OS: [L4T 36 (Ubuntu 22-based)/JetPack 6 (latest major release for Orin as of 2/2026)](https://developer.nvidia.com/embedded/jetpack-archive)
