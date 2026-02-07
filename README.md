@@ -39,7 +39,7 @@ Also read [`RATIONALE.md`](/supplementary/RATIONALE.md) or [ask Perplexity <img 
 
 https://github.com/user-attachments/assets/57e5bc91-8bee-4bae-8f81-a9aacef471e7
 
-## Overview
+## 0. Architecture
 
 ```mermaid
 %%{init: {'theme': 'base', 'themeVariables': { 'fontFamily': 'monospace'}}}%%
@@ -180,7 +180,7 @@ aerial-autonomy-stack
 ```
 </details>
 
-## Installation
+## 1. Installation
 
 > AAS is tested on Ubuntu 22.04/24.04 with `nvidia-driver-580` using an i7-11 with 16GB RAM and RTX 3060
 > 
@@ -206,7 +206,7 @@ cd aerial-autonomy-stack/scripts/
   </a>
 </div>
 
-## Simulation
+## 2. Simulation
 
 ![workspace](https://github.com/user-attachments/assets/ad909fcc-69de-44ac-84b3-c5bc7a1c896f)
 
@@ -346,7 +346,7 @@ python3 /aas/simulation_resources/scripts/gz_wind.py --stop_wind
 > / *(iii)* `shibuya_crossing`, a 3D world adapted from [cgtrader](https://www.cgtrader.com/)
 > / *(iv)* `swiss_town`, a photogrammetry world courtesy of [Pix4D / pix4d.com](https://support.pix4d.com/hc/en-us/articles/360000235126)
 
-## Gymnasium Environment
+## 3. Gymnasium Environment
 
 <details>
 <summary>Using a Python <kbd>venv</kbd> or a <a href="https://docs.conda.io/projects/conda/en/stable/user-guide/install/linux.html"><kbd>conda</kbd></a> environment is optional but recommended <i>(click to expand)</i></summary>
@@ -394,7 +394,7 @@ docker stop $(docker ps -q) && docker container prune -f && docker network prune
 
 -->
 
-## Jetson Deployment
+## 4. Jetson Deployment
 
 > AAS is tested on a [Holybro Jetson Baseboard](https://holybro.com/products/pixhawk-jetson-baseboard) with Pixhawk 6X and NVIDIA Orin NX 16GB on an [X650](https://holybro.com/collections/multicopter-kit/products/x650-development-kit)
 > 
