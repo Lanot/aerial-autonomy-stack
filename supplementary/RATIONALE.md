@@ -1,16 +1,23 @@
 # Rationale
 
-## The 2 Facets of the Sim2real Gap
+This project aims to speed up the ideation-development-simulation-deployment cycle of PX4/ArduPilot-based applications.
+
+## The Many Facets of the Sim2real Gap
 
 The *sim2real gap* is an euphemism for robotic projects that work well on a developer's laptop but not so much in the field.
 Aerial sim2real research often focuses on modeling and simulation of complex aerodynamics effects.
 
-Nonetheless, in applied robotics, an equally important component of *sim2real gap* lies in [system design](https://arxiv.org/abs/2510.20808)—in particular, software tooling and engineering, where the dynamic range between ["average and the best is 50-to-1, maybe 100-to-1"](https://www.youtube.com/watch?v=wTgQ2PBiz-g&t=35s).
+Nonetheless, at deployment time, an equally important component of *sim2real gap* arises from [system design](https://arxiv.org/abs/2510.20808)—in particular, software tooling and engineering, where the dynamic range between ["average and the best is 50-to-1, maybe 100-to-1"](https://www.youtube.com/watch?v=wTgQ2PBiz-g&t=35s).
 
-This is the challenge—and good sport—of **full-stack integration** among:
+This is the challenge—and good sport—of **vertical/full-stack integration** among:
 
 - the **many frameworks** that go into drone autonomy (a physics engine to simulate drone dynamics, a rendering engine to generate realistic imagery, a GPU-accelerated machine learning runtime for perception, one or more inter-process and inter-thread communication middleware, the interface to the microcontroller and autopilot software performing state-estimation and low-level control, the SDKs of the deployed embedded systems, etc.)
 - emulated **inter-robot communication** (in aerial systems, this is heavily affected by the actual flight plans and available RF hardware)
+
+## Presentations and Papers
+
+- ["On the System Design Reality Gap" (January 2026) Aerial Robotics Meeting [slides]](https://docs.google.com/presentation/d/1Sz0d7WPWNwgCM3Q49Nnq1mvkSwPyK_CCQ7viHxO_Ucs)
+- ["aerial-autonomy-stack—a Faster-than-real-time, Autopilot-agnostic, ROS2 Framework to Simulate and Deploy Perception-based Drones" (February 2026) arXiv [paper]](https://arxiv.org/abs/2602.07264)
 
 ## Related Work
 
@@ -42,3 +49,77 @@ For even more resources, check out [`aerial_robotic_landscape`](https://github.c
     - GStreamer camera-to-companion board acquisition pipelines
     - Zenoh inter-vehicle ROS2 bridge, with networking over LAN (HITL) or emulated by `docker network` (SITL)
     - Dual network—in both SITL and HITL—to separate synthetic sensor data from inter-vehicle communication
+
+## Roadmap
+
+### Feature: LiDAR-inertial Odometry and SLAM
+
+> Advanced localization and mapping baselines and capabilities
+
+- [x] [KISS-ICP](https://github.com/PRBonn/kiss-icp) LiDAR odometry (LO) baseline
+- [ ] Add config files (and shell) for the resolution/rate/extrinsic of the camera and lidar sensors/pipelines/topics
+- [ ] Add visual-inertial (VIO) baseline (e.g., [open_vins](https://github.com/rpng/open_vins))
+- [ ] Add  LiDAR-intertial (LIO) baseline (e.g., [SPARK-FAST-LIO](https://github.com/MIT-SPARK/spark-fast-lio))
+- [ ] Add  LIVO baselines (e.g., [SuperOdom](https://github.com/superxslam/SuperOdom), [FAST-LIVO2](https://github.com/hku-mars/FAST-LIVO2))
+- [ ] Create a 3D world.sdf for LIVO-based navigation and mapping (i.e., textured and obstacle rich)
+- [ ] Compare localization performance for a pre-defined navigation task at varying speeds
+- [ ] Develop proposed approach
+- [ ] Use LIVO for PX4/ArduPilot SITL control (e.g., [PX4-Multiagent-Simulation](https://github.com/TannerGilbert/PX4-Multiagent-Simulation), [Ardupilot_Multiagent_Simulation](https://github.com/aau-cns/Ardupilot_Multiagent_Simulation))
+
+### Feature: Gymnasium RL Environment and Examples
+
+> SITL and perception-enabled reinforcement learning for real-world deployment
+
+- [x] Wrap FTRT, headless, steppable simulation in `aas-gym`
+- [ ] Optimize the environment `.reset()` time
+- [ ] Conditional/AP mode startup to replace `GYM_INIT_DURATION`
+- [ ] `offboard_control` references from external topics bridged by ZeroMQ
+- [ ] ...
+
+<!-- 
+
+### Feature: Betaflight SITL
+
+> Implement a C++ gz-transport/UDP bridge between Gazebo Sim and Betaflight SITL
+
+- https://www.betaflight.com/docs/development/SITL
+- https://github.com/Aeroloop/betaloop
+- https://github.com/utiasDSL/gym-pybullet-drones/blob/a8c238c21c7586ee1735bafb358a4d5637402f14/gym_pybullet_drones/envs/BetaAviary.py#L111C1-L172C56
+
+### More Out-there Ideas
+
+> Potential for technical spikes/long-term, nice-to-have features
+
+- Use ArduPilot ROS2 DDS interface instead of or alongside MAVROS
+    - https://github.com/ArduPilot/ardupilot/tree/master/Tools/ros2#readme
+    - https://ardupilot.org/dev/docs/ros2-sitl.html
+- Integrate a photorealistic simulator (e.g., IsaacSim)
+    - https://github.com/PegasusSimulator/PegasusSimulator
+- Integrate more realistic flight dynamics (e.g., JSBSim)
+    - https://github.com/JSBSim-Team/jsbsim
+- Integrate a VLA model bridging the `yolo_py` and `mission` packages
+- Re-instate Gazebo Sim support for Pixhawk HITL simulation using MAVLink HIL_ interface
+    - https://mavlink.io/en/messages/common.html
+    - https://github.com/tiiuae/px4-gzsim-plugins/
+    - https://docs.px4.io/main/en/simulation/hitl
+    - https://ardupilot.org/dev/docs/hitl-simulators.html
+
+-->
+
+### Maintenance: Dependency Management
+
+> PRs to update dependencies to their latest stable release are always welcome
+
+- [x] Host OS: [Ubuntu 22.04/24.04 (LTS, ESM 4/2034)](https://ubuntu.com/about/release-cycle)
+- [x] Jetson OS: [L4T 36 (Ubuntu 22-based)/JetPack 6 (latest major release for Orin as of 2/2026)](https://developer.nvidia.com/embedded/jetpack-archive)
+- [ ] [`nvidia-driver-580`](https://developer.nvidia.com/datacenter-driver-archive) -> **TEST ON 590**
+- [x] [Docker Engine v29](https://docs.docker.com/engine/release-notes/)
+- [x] [NVIDIA Container Toolkit 1.18](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/index.html)
+- [ ] `amd64` base image: [`cuda:12.8.1-cudnn-runtime-ubuntu22.04`](https://catalog.ngc.nvidia.com/orgs/nvidia/containers/cuda/tags) -> **UPDATE TO `cuda:13.1.1-cudnn-runtime-ubuntu22.04`**
+- [x] `arm64`/Jetson base image: [`l4t-jetpack:r36.4.0`](https://catalog.ngc.nvidia.com/orgs/nvidia/containers/l4t-jetpack/tags)
+- [x] [ROS2 Humble (LTS, EOL 5/2027)](https://docs.ros.org/en/rolling/Releases.html)
+- [x] [Gazebo Sim Harmonic (LTS, EOL 9/2028)](https://gazebosim.org/docs/latest/releases/)
+- [ ] [PX4 1.16.0](https://github.com/PX4/PX4-Autopilot/releases) -> **UPDATE TO 1.16.1**
+- [ ] [ArduPilot 4.6.2](https://github.com/ArduPilot/ardupilot/releases) -> **UPDATE TO 4.6.3**
+- [x] [YOLOv8](https://github.com/ultralytics/ultralytics/releases)
+- [ ] [ONNX Runtime 1.22.1](https://onnxruntime.ai/getting-started) -> **UPDATE TO 1.23.2**

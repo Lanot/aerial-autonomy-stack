@@ -10,7 +10,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-22.04-arm
-    timeout-minutes: 120
+    timeout-minutes: 180
     permissions:
       contents: read
       packages: write
@@ -18,7 +18,7 @@ jobs:
     steps:       
       - name: Add swap space
         run: |
-          sudo swapoff -a
+          sudo swapoff -a || true
           sudo rm -f /swapfile
           sudo fallocate -l 10G /swapfile
           sudo chmod 600 /swapfile

@@ -1,5 +1,9 @@
 # Setup Avionics
 
+> These instructions are tested on a [Holybro Jetson Baseboard](https://holybro.com/products/pixhawk-jetson-baseboard) with Pixhawk 6X and NVIDIA Orin NX 16GB on an [X650](https://holybro.com/collections/multicopter-kit/products/x650-development-kit)
+>
+> Alternative hardware options include: [ARK Jetson PAB Orin NX NDAA](https://arkelectron.com/product/ark-jetson-orin-nx-ndaa-bundle/) and the [Holybro 6X Pro](https://holybro.com/collections/flight-controllers/products/pixhawk-6x-pro) paired with [Seeed Studio's A603/A608](https://www.seeedstudio.com/Jetson-A608-Carrier-Board-for-Orin-NX-Orin-Nano-Series-p-5853.html)
+
 ## Flash JetPack 6 to Jetson Orin
 
 Holybro Jetson baseboards normally ship with JetPack 5
@@ -83,7 +87,7 @@ sudo apt-get update
 sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
 sudo docker run hello-world         # Test Docker is working
-sudo docker version                 # Check version, 28.3.0 at the time of writing
+sudo docker version                 # (optional) Check version
 
 # Remove the need to sudo the docker command
 sudo groupadd docker
@@ -115,7 +119,7 @@ sudo apt-get install -y \
 sudo nvidia-ctk runtime configure --runtime=docker
 sudo systemctl restart docker
 
-docker info | grep -i runtime       # Check `nvidia` runtime is available
+docker info | grep -i runtime       # Check the `nvidia` runtime is available
 
 docker run --rm --runtime=nvidia nvcr.io/nvidia/l4t-base:r36.2.0 nvidia-smi    # Test nvidia-smi works in a container with Linux4Tegra
 ```
@@ -156,7 +160,7 @@ docker run -it --rm --entrypoint bash -v ~/Downloads:/temp simulation-image -c \
 
 To flash the newly created `.px4` or `.apj` file to your autopilot board, follow [QGC's User Guide](https://docs.qgroundcontrol.com/Stable_V5.0/en/qgc-user-guide/setup_view/firmware.html) 
 
-## PX4: Configure 6x's Network and DDS Client
+## PX4: Configure 6X's Network and DDS Client
 
 On the Jetson Baseboard's Orin NX, under "Settings" -> "Network", configure the "PCI Ethernet" connection to "Manual" with IPv4 with address 10.10.1.44 and netmask 255.255.255.0
 
@@ -230,8 +234,12 @@ SERIAL2_PROTOCOL MAVLink2
 > Match ArduPilot parameter `SYSID_THISMAV` with the `DRONE_ID` used to launch `./deploy_run.sh`: this is the `ROS_DOMAIN_ID` of the aircraft container
 
 <!-- 
+
+## Additional Resources
+
 - [ArduPilot serial configuration](https://ardupilot.org/copter/docs/common-serial-options.html)
 - [Jetson baseboard serial configuration](https://github.com/PX4/PX4-Autopilot/blob/main/docs/en/companion_computer/holybro_pixhawk_jetson_baseboard.md#serial-connection)
 - [MAVROS connection](https://github.com/mavlink/mavros/blob/ros2/mavros/README.md)
 - [Requesting MAVLink data from ArduPilot](https://ardupilot.org/dev/docs/mavlink-requesting-data.html)
+
 -->

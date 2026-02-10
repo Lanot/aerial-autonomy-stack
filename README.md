@@ -1,10 +1,25 @@
 # aerial-autonomy-stack
 
+<img align="right" height="120" alt="mission-patch" src="https://github.com/user-attachments/assets/252cc420-9527-4342-9ffd-c6bec77ebdf3" />
+
 *Aerial autonomy stack* (AAS) is an all-in-one software stack to:
 
 1. **Develop** multi-drone autonomy—with ROS2, PX4, and ArduPilot
 2. **Simulate** faster-than-real-time perception and control—with YOLOv8 and 3D LiDAR 
 3. **Deploy** in real drones—with JetPack and NVIDIA Orin
+
+Also read [`RATIONALE.md`](/supplementary/RATIONALE.md) or [ask Perplexity <img width="16" alt="logo" src="https://github.com/user-attachments/assets/458351d3-ccc7-4fa4-b49a-86a3492170e5" /> about AAS](https://www.perplexity.ai/search?q=I%20am%20looking%20at%20the%20repo%20https%3A%2F%2Fgithub.com%2FJacopoPan%2Faerial-autonomy-stack.%20Summarize%20what%20this%20code%20does,%20give%20me%20an%20assessment%20of%20the%20code%20quality%20and%20potential,%20and%20tell%20me%20how%20it%20can%20help%20me%20and%20my%20projects.); if you wish, please cite this work as:
+
+```bibtex
+@misc{panerati2026aas,
+      title={{\ttfamily aerial-autonomy-stack}---a faster-than-real-time, autopilot-agnostic, {ROS2} framework to simulate and deploy perception-based drones}, 
+      author={Jacopo Panerati and Sina Sajjadi and Sina Soleymanpour and Varunkumar Mehta and Iraj Mantegh},
+      year={2026},
+      eprint={2602.07264},
+      archivePrefix={arXiv},
+      primaryClass={cs.RO},
+      url={https://arxiv.org/abs/2602.07264}}
+```
 
 <details>
 <summary><b>Feature list</b> <i>(click to expand)</i></summary>
@@ -17,7 +32,7 @@
 - Gazebo's wind effects plugin
 - **Dockerized simulation** based on [`nvcr.io/nvidia/cuda:12.8.1-cudnn-runtime-ubuntu22.04`](https://catalog.ngc.nvidia.com/orgs/nvidia/containers/cuda/tags)
 - **Dockerized deployment** based on [`nvcr.io/nvidia/l4t-jetpack:r36.4.0`](https://catalog.ngc.nvidia.com/orgs/nvidia/containers/l4t-jetpack/tags)
-- **Windows 11** compatibility *via* WSLg
+- **Windows 11** compatibility *via* WSL
 - Multi-**Jetson-in-the-loop (HITL) simulation** to test NVIDIA- and ARM-based on-board compute
 - Dual network to separate simulated sensors (`SIM_SUBNET`) and inter-vehicle comms (`AIR_SUBNET`)
 - [Zenoh](https://github.com/eclipse-zenoh/zenoh-plugin-ros2dds) inter-vehicle ROS2 bridge
@@ -29,65 +44,87 @@
 
 https://github.com/user-attachments/assets/57e5bc91-8bee-4bae-8f81-a9aacef471e7
 
-## Overview
+## 0. Architecture
 
 ```mermaid
-graph LR
+%%{init: {'theme': 'base', 'themeVariables': { 'fontFamily': 'monospace'}}}%%
+flowchart TB
+    subgraph aas [" "]
+        subgraph sim ["#nbsp;simulation#nbsp;container#nbsp;(amd64)"]
+            sitl("[N x] PX4 || <br/> ArduPilot SITL"):::resource
+            gz(Gazebo Sim):::resource
+            subgraph models [Models]
+                drones(aircraft_models/):::resource
+                worlds(simulation_worlds/):::resource
+            end
 
-    subgraph air ["[N#nbsp;x]#nbsp;aircraft#nbsp;container#nbsp;(amd64/arm64)"]
-        offboard_control(offboard_control)
-        autopilot_interface(autopilot_interface)
-        mission(mission)
-        state_sharing(state_sharing)
-        yolo_py(yolo_py)
-        kiss_icp(kiss_icp)
-        zenoh_air(zenoh-bridge-ros2dds)
-        ap_link("uxrce_dds_agent <br/>OR mavros")
+            drones --> gz
+            worlds --> gz
+            sitl <--> |"gz_bridge || ardupilot_gazebo"| gz
+        end
 
-        mission --> autopilot_interface
-        yolo_py --> offboard_control
-        kiss_icp --> offboard_control
-        offboard_control -- /reference --> autopilot_interface
-        ap_link --> state_sharing
-        ap_link <--> autopilot_interface
-        state_sharing -- /state_sharing_drone_n --> zenoh_air
+        subgraph gnd ["#nbsp;ground#nbsp;container#nbsp;(amd64)"]
+            mlrouter{{mavlink-router}}:::bridge
+            ground_system[/ground_system\]:::algo
+            qgc(QGroundControl):::resource
+            zenoh_gnd{{zenoh-bridge}}:::bridge
 
+            ground_system --> |"/tracks"| zenoh_gnd
+            mlrouter <--> qgc
+            mlrouter --> ground_system
+        end
+
+        subgraph air ["[N#nbsp;x]#nbsp;aircraft#nbsp;container(s)#nbsp;(amd64,#nbsp;arm64)"]
+            subgraph perception [Perception]
+                yolo_py[/yolo_py/]:::algo
+                kiss_icp[/kiss_icp/]:::algo
+            end
+            subgraph control [Control]
+                offboard_control(offboard_control):::algo
+                autopilot_interface(autopilot_interface):::algo
+                mission(mission):::algo
+            end
+            ap_link{{"uxrce_dds <br/> || MAVROS"}}:::bridge
+            subgraph swarm [Swarm]
+                state_sharing[/state_sharing\]:::algo
+            end
+            zenoh_air{{zenoh-bridge}}:::bridge
+
+            kiss_icp -.-> |"/TBD"| ap_link
+            ap_link <--> autopilot_interface
+            ap_link --> state_sharing
+            yolo_py --> |"/detections"| offboard_control
+            offboard_control --> |"/reference"| autopilot_interface
+            mission --> |"ros2 action/srv"| autopilot_interface
+            zenoh_air <--> |"/state_drone_n"| state_sharing
+        end
+
+        repo(((aerial#nbsp;autonomy#nbsp;stack)))
     end
 
-    subgraph gnd ["ground#nbsp;container#nbsp;(amd64)"]
-        ground_system(ground_system)
-        qgc(QGroundControl)
-        zenoh_gnd(zenoh-bridge-ros2dds)
+    repo ~~~ gz
+    gz --> |"gz_gst_bridge <br/> [SIM_SUBNET]"| yolo_py
+    gz --> |"/lidar_points <br/> [SIM_SUBNET]"| kiss_icp
+    sitl <--> |"UDP <br/> [SIM_SUBNET]"| ap_link
+    sitl <--> |"MAVLink <br/> [SIM_SUBNET]"| mlrouter 
+    zenoh_gnd <-.-> |"TCP <br/> [AIR_SUBNET]"| zenoh_air
 
-        zenoh_gnd <-- TCP [AIR_NET] --> zenoh_air
-        ground_system -- /tracks --> zenoh_gnd
-    end
+    classDef bridge fill:#ffebd6,stroke:#f5a623,stroke-width:2px;
+    classDef algo fill:#e1f5fe,stroke:#0277bd,stroke-width:2px;
+    classDef resource fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px;
+    classDef blueStyle  fill:#e1f0ff,stroke:#666,stroke-width:2px;
+    classDef whiteStyle fill:#f9f9f9,stroke:#666,stroke-width:1px,stroke-dasharray: 5 5;
+    classDef greyStyle  fill:#eeeeee,stroke:#666,stroke-width:1px,stroke-dasharray: 5 5;
 
-    subgraph sim ["simulation#nbsp;container#nbsp;(amd64)"]
-        sitl("[N x] PX4 OR <br/>ArduPilot SITL")
-        gz(Gazebo Sim)
-
-        gz -- gz_gst_bridge [SIM_NET] --> yolo_py
-        gz -- /lidar_points [SIM_NET] --> kiss_icp
-        sitl <-- gz_bridge OR adupilot_gazebo --> gz
-        sitl <-- MAVLink [SIM_NET] --> qgc 
-        sitl -- MAVLink [SIM_NET] --> ground_system
-        sitl <-- UDP [SIM_NET] --> ap_link
-    end
-
-style air fill:#e8b7b5,stroke:#333,stroke-width:0px
-style gnd fill:#7cbb8b,stroke:#333,stroke-width:0px
-style sim fill:#b5d4f1,stroke:#333,stroke-width:0px
-
-classDef default fill:#0,stroke:#333,stroke-width:2px,color:black;
-linkStyle default stroke:#fffff,stroke-width:2px;
-
-linkStyle 9,10,12,13,14 stroke:blue,stroke-width:4px;
-linkStyle 7 stroke:red,stroke-width:4px;
+    class aas,repo blueStyle;
+    class air,gnd,sim whiteStyle;
+    class perception,control,models,swarm greyStyle;
+    linkStyle 14,15,16,17 stroke:teal,stroke-width:3px;
+    linkStyle 18 stroke:blue,stroke-width:4px;
 ```
 
 <details>
-<summary>Repo Structure <i>(click to expand)</i></summary>
+<summary>Repository Structure <i>(click to expand)</i></summary>
 
 ```sh
 aerial-autonomy-stack
@@ -148,13 +185,13 @@ aerial-autonomy-stack
 ```
 </details>
 
-## Installation
+## 1. Installation
 
-> AAS is tested on Ubuntu 22.04 with `nvidia-driver-580` using an i7-11 with 16GB RAM and RTX 3060
+> AAS is tested on Ubuntu 22.04/24.04 with `nvidia-driver-580` using an i7-11 with 16GB RAM and RTX 3060
 > 
 > On Ubuntu, read [`REQUIREMENTS_UBUNTU.md`](/supplementary/REQUIREMENTS_UBUNTU.md) to setup the requirements (Docker Engine, `nvidia-ctk`)
 >
-> On Windows 11, read [`REQUIREMENTS_WSL.md`](/supplementary/REQUIREMENTS_WSL.md) to setup WSLg and the requirements
+> On Windows 11, read [`REQUIREMENTS_WSL.md`](/supplementary/REQUIREMENTS_WSL.md) to setup the requirements (WSL, etc.)
 
 ```sh
 sudo apt update && sudo apt install -y git git-lfs xterm xfonts-base && git lfs install
@@ -164,27 +201,21 @@ cd aerial-autonomy-stack/scripts/
 
 ./sim_build.sh
 # Note: the 1st build takes ~30GB of space and ~25' with good internet (`Ctrl + c` and restart if needed)
+# Alternatively, pre-build images are available on ghcr.io:
+# docker pull ghcr.io/jacopopan/[aircraft|ground|simulation]-image:latest
 ```
 
 <div align="right">
-  <a href="https://github.com/JacopoPan/aerial-autonomy-stack/actions/workflows/simulation-amd64-build.yml">
-    <img src="https://github.com/JacopoPan/aerial-autonomy-stack/actions/workflows/simulation-amd64-build.yml/badge.svg" alt="simulation-image amd64">
-  </a>
-  <a href="https://github.com/JacopoPan/aerial-autonomy-stack/actions/workflows/ground-amd64-build.yml">
-    <img src="https://github.com/JacopoPan/aerial-autonomy-stack/actions/workflows/ground-amd64-build.yml/badge.svg" alt="ground-image amd64">
-  </a>
-  <a href="https://github.com/JacopoPan/aerial-autonomy-stack/actions/workflows/aircraft-amd64-build.yml">
-    <img src="https://github.com/JacopoPan/aerial-autonomy-stack/actions/workflows/aircraft-amd64-build.yml/badge.svg" alt="aircraft-image amd64">
+  <a href="https://github.com/JacopoPan/aerial-autonomy-stack/actions/workflows/aas-amd64-build-and-test.yml">
+    <img src="https://github.com/JacopoPan/aerial-autonomy-stack/actions/workflows/aas-amd64-build-and-test.yml/badge.svg" alt="aas build-and-test amd64">
   </a>
 </div>
 
----
-
-## Simulation
+## 2. Simulation
 
 ![workspace](https://github.com/user-attachments/assets/ad909fcc-69de-44ac-84b3-c5bc7a1c896f)
 
-> On a low-mid range laptop—i7-11 with 16GB RAM and RTX 3060—AAS can simulate a PX4 quad with YOLO and LiDAR at **10x real-time-factor** with flag `RTF=0.0`. Run multiple `sim_run.sh` in parallel adding flag `INSTANCE=1`, `INSTANCE=2`, etc. for even higher throughput. Make sure you run `sudo prime-select nvidia` and rebooted to leverage GPU rendering and compute.
+> On a low-mid range laptop—i7-11 with 16GB RAM and RTX 3060—AAS can simulate a PX4 quad with YOLO and LiDAR at **10x real-time-factor** with flag `RTF=0.0`. Run multiple `sim_run.sh` in parallel adding flag `INSTANCE=1`, `INSTANCE=2`, etc. for even higher throughput.
 
 ```sh
 # 1. Start AAS
@@ -195,7 +226,7 @@ AUTOPILOT=px4 NUM_QUADS=1 NUM_VTOLS=1 WORLD=swiss_town RTF=3.0 ./sim_run.sh     
 In any of the `QUAD` or `VTOL` Xterm terminals:
 ```sh
 # 2. Fly
-ros2 run mission mission --ros-args -r __ns:=/Drone$DRONE_ID -p use_sim_time:=true            # This mission is a simple takeoff, followed by an orbit, and landing for any vehicle
+ros2 run mission mission --ros-args -r __ns:=/Drone$DRONE_ID -p use_sim_time:=true            # This mission is defined in /aircraft/aircraft_resources/missions/test_mission.yaml
 ```
 
 In the `Simulation`'s Xterm terminal:
@@ -213,7 +244,7 @@ python3 /aas/simulation_resources/scripts/gz_wind.py --stop_wind
 
 > [!TIP]
 > <details>
-> <summary><b>ROS2 Drone CLI</b> <i>(click to expand)</i></summary>
+> <summary>Tip 1: use <b>ROS2 drone motion primitives</b> from CLI <i>(click to expand)</i></summary>
 >
 > ```sh
 > # Takeoff action (quads and VTOLs)
@@ -232,12 +263,31 @@ python3 /aas/simulation_resources/scripts/gz_wind.py --stop_wind
 > cancellable_action "ros2 action send_goal /Drone${DRONE_ID}/offboard_action autopilot_interface_msgs/action/Offboard '{offboard_setpoint_type: 1, max_duration_sec: 5.0}'"
 >
 > # SetSpeed service (always limited by the autopilot params, for quads applies from the next command, not effective on ArduPilot VTOLs) 
-> ros2 service call /Drone${DRONE_ID}/set_speed autopilot_interface_msgs/srv/SetSpeed '{speed: 3.0}' 
+> ros2 service call /Drone${DRONE_ID}/set_speed autopilot_interface_msgs/srv/SetSpeed '{speed: 3.0}'
 > ```
-> To create a new mission, implement [`MissionNode.conops_callback()`](/aircraft/aircraft_ws/src/mission/mission/mission_node.py)
+> To create a new mission, re-implement [`test_mission.yaml`](/aircraft/aircraft_resources/missions/test_mission.yaml)
 > </details>
 > <details>
-> <summary><b>Development within Live Containers</b> <i>(click to expand)</i></summary>
+> <summary>Tip 2: use <b>Tmux shortcuts</b> to navigate windows and panes in Xterm <i>(click to expand)</i></summary>
+>
+> ```sh
+> Ctrl + b, then n, p                   # Move between Tmux windows 
+> Ctrl + b, then [arrow keys]           # Move between Tmux panes in a window
+> Ctrl + [, then [arrow keys]           # Enter copy mode (to select and/or scroll back)
+> q                                     # Exit copy mode
+> Ctrl + b, then "                      # Split a Tmux window horizontally
+> Ctrl + b, then %                      # Split a Tmux window vertically
+> Ctrl + b, then d                      # Detach Tmux
+> ```
+> ```sh
+> tmux list-sessions                    # List all sessions
+> tmux attach-session -t [session_name] # Reattach a session
+> tmux kill-session -t [session_name]   # Kill a session
+> tmux kill-server                      # Kill all sessions
+> ```
+> </details>
+> <details>
+> <summary>Tip 3: <b>develop within running containers</b> <i>(click to expand)</i></summary>
 > 
 > Launching the `sim_run.sh` script with `DEV=true`, does **not** start the simulation and mounts folders `[aircraft|ground|simulation]_resources`, `[aircraft|ground]_ws/src` as volumes to more easily track, commit, push changes while building and testing them within the containers:
 > 
@@ -272,26 +322,7 @@ python3 /aas/simulation_resources/scripts/gz_wind.py --stop_wind
 > To end the simulation, in each terminal detach Tmux with `Ctrl + b`, then `d`; kill all lingering processes with `tmux kill-server && pkill -f gz`
 > </details>
 > <details>
-> <summary><b>Tmux shortcuts</b> to navigate the windows/panes in Xterm <i>(click to expand)</i></summary>
->
-> ```sh
-> Ctrl + b, then n, p                   # Move between Tmux windows 
-> Ctrl + b, then [arrow keys]           # Move between Tmux panes in a window
-> Ctrl + [, then [arrow keys]           # Enter copy mode (to select and/or scroll back)
-> q                                     # Exit copy mode
-> Ctrl + b, then "                      # Split a Tmux window horizontally
-> Ctrl + b, then %                      # Split a Tmux window vertically
-> Ctrl + b, then d                      # Detach Tmux
-> ```
-> ```sh
-> tmux list-sessions                    # List all sessions
-> tmux attach-session -t [session_name] # Reattach a session
-> tmux kill-session -t [session_name]   # Kill a session
-> tmux kill-server                      # Kill all sessions
-> ```
-> </details>
-> <details>
-> <summary><b>Docker cleanup</b> commands <i>(click to expand)</i></summary>
+> <summary>Tip 4: periodically run <b>Docker cleanups</b> <i>(click to expand)</i></summary>
 >
 > ```sh
 > docker ps -a                          # List containers
@@ -314,30 +345,36 @@ python3 /aas/simulation_resources/scripts/gz_wind.py --stop_wind
 
 ![worlds](https://github.com/user-attachments/assets/b9f7635a-0b1f-4698-ba6a-70ab1b412aef)
 
-Included `WORLD`s:
-- `apple_orchard`, a GIS world created using [BlenderGIS](https://github.com/domlysz/BlenderGIS)
-- `impalpable_greyness`, (default) an empty world with simple shapes
-- `shibuya_crossing`, a 3D world adapted from [cgtrader](https://www.cgtrader.com/)
-- `swiss_town`, a photogrammetry world courtesy of [Pix4D / pix4d.com](https://support.pix4d.com/hc/en-us/articles/360000235126)
+> `WORLD`s (in clock-wise order): 
+> *(i)* `apple_orchard`, a GIS world created using [BlenderGIS](https://github.com/domlysz/BlenderGIS)
+> / *(ii)* `impalpable_greyness`, an empty world with simple shapes
+> / *(iii)* `shibuya_crossing`, a 3D world adapted from [cgtrader](https://www.cgtrader.com/)
+> / *(iv)* `swiss_town`, a photogrammetry world courtesy of [Pix4D / pix4d.com](https://support.pix4d.com/hc/en-us/articles/360000235126)
 
----
+## 3. Gymnasium Environment
 
-## Gymnasium Environment
+<details>
+<summary>Using a Python <kbd>venv</kbd> or a <a href="https://docs.conda.io/projects/conda/en/stable/user-guide/install/linux.html"><kbd>conda</kbd></a> environment is optional but recommended <i>(click to expand)</i></summary>
 
-Using a Python `venv` or a [`conda`](https://docs.conda.io/projects/conda/en/stable/user-guide/install/linux.html) environment is optional but recommended:
 ```sh
-wget https://repo.anaconda.com/archive/Anaconda3-2025.06-0-Linux-x86_64.sh
+wget https://repo.anaconda.com/archive/Anaconda3-2025.06-0-Linux-x86_64.sh # Or a newer version in https://repo.anaconda.com/archive/
 bash Anaconda3-2025.06-0-Linux-x86_64.sh
 conda create -n aas python=3.13
-conda activate aas
 ```
+</details>
 
-Install the `aas-gym` package (after completing the steps in ["Installation"](#installation)):
+Install the `aas-gym` package (**after** completing the steps in ["Installation"](#1-installation)):
 ```sh
 conda activate aas                                    # If using Anaconda
 cd aerial-autonomy-stack/aas-gym/
 pip3 install -e .
 ```
+
+<div align="right">
+  <a href="https://github.com/JacopoPan/aerial-autonomy-stack/actions/workflows/aas-gym-pip-install.yml">
+    <img src="https://github.com/JacopoPan/aerial-autonomy-stack/actions/workflows/aas-gym-pip-install.yml/badge.svg" alt="aas-gym pip install">
+  </a>
+</div>
 
 Use with:
 ```sh
@@ -362,11 +399,9 @@ docker stop $(docker ps -q) && docker container prune -f && docker network prune
 
 -->
 
----
+## 4. Jetson Deployment
 
-## Jetson Deployment
-
-> AAS is tested on a [Holybro Jetson Baseboard](https://holybro.com/products/pixhawk-jetson-baseboard) with Pixhawk 6X and NVIDIA Orin NX 16GB
+> AAS is tested on a [Holybro Jetson Baseboard](https://holybro.com/products/pixhawk-jetson-baseboard) with Pixhawk 6X and NVIDIA Orin NX 16GB on an [X650](https://holybro.com/collections/multicopter-kit/products/x650-development-kit)
 > 
 > Read [`SETUP_AVIONICS.md`](/supplementary/SETUP_AVIONICS.md) to setup the requirements on the Jetson and configure the Pixhawk
 
@@ -389,14 +424,14 @@ Finally, start the `aircraft-image` on Jetson Orin NX
 
 ```sh
 cd aerial-autonomy-stack/scripts/
-DRONE_TYPE=quad AUTOPILOT=px4 DRONE_ID=1 CAMERA=true LIDAR=false ./deploy_run.sh
+DRONE_TYPE=quad AUTOPILOT=px4 DRONE_ID=1 CAMERA=true LIDAR=false HEADLESS=true ./deploy_run.sh
 # Note: the 1st run of `./deploy_run.sh` requires ~10' to build the FP16 TensorRT cache
 ```
 
 <details>
-<summary><b>HITL Simulation</b> <i>(click to expand)</i></summary>
+<summary><b>Advanced Topic: HITL Simulation</b> <i>(click to expand)</i></summary>
 
-> **Note:** currently, HITL covers the Jetson compute and the inter-vehicle network, support for Pixhawk HITL is WIP. 
+> **Note:** HITL simulation validates the Jetson compute and the inter-vehicle network. 
 > Use USB2.0 ASIX Ethernet adapters to add multiple network interfaces to the Jetson baseboards
 
 Set up a LAN on an arbitrary `SIM_SUBNET` with netmask `255.255.0.0` (e.g. `172.30.x.x`) between:
@@ -444,15 +479,10 @@ Once done, detach Tmux (and remove the containers) with `Ctrl + b`, then `d`
 
 <!-- 
 
-## License 
-
-Distributed under the MIT License. See `LICENSE.txt` for more information. Copyright (c) 2025 Jacopo Panerati
-
 ## Known Issues
 
-- Invert order of set current waypoint (fist) and MAV_CMD_MISSION_START (second) in ardupilot_interface.cpp to get rid of QGC warning
 - ArduPilot SITL for Iris uses option -f that also sets "external": True, this is not the case for the Alti Transition from ArduPilot/SITL_Models
-- QGC is started with a virtual joystick (with low throttle if using only VTOLs and centered throttle if there are quads), this is reflective of real-life but note that this counts as "RC loss" when switching focus from one autopilot instance to another
+- QGC will only connect to the first 10 ArduPilot vehicles when GND_CONTAINER=false because of settings in QGroundControl.ini
 - On non-configured real-life AP, missing topics: ros2 topic echo /mavros/local_position/odom ros2 topic echo /mavros/home_position/home
 - Gazebo WindEffects plugin is disabled/not working for PX4 standard_vtol
 - Command 178 MAV_CMD_DO_CHANGE_SPEED is accepted but not effective in changing speed for ArduPilot VTOL
@@ -460,29 +490,8 @@ Distributed under the MIT License. See `LICENSE.txt` for more information. Copyr
 - QGC does not save roll and pitch in the telemetry bar for PX4 VTOLs (MAV_TYPE 22)
 - PX4 quad max tilt is limited by the anti-windup gain (zero it to deactivate it): const float arw_gain = 2.f / _gain_vel_p(0);
 
-## PX4/ArduPilot SITL/HITL architectures
-- https://docs.px4.io/main/en/simulation/
-- https://docs.px4.io/main/en/simulation/#sitl-simulation-environment
-- https://docs.px4.io/main/en/simulation/hitl.html
-- https://ardupilot.org/dev/docs/sitl-simulator-software-in-the-loop.html#sitl-architecture
+## License 
 
-## TODOs
-
-LiDAR-inertial Odometry and SLAM
-- LiDAR driver https://github.com/Livox-SDK/livox_ros_driver2 in aircraft-image (the LiDAR should publish on topic `/lidar_points` for KISS-ICP)
-- Integrate [SPARK-FAST-LIO](https://github.com/MIT-SPARK/spark-fast-lio) or [SuperOdom](https://github.com/superxslam/SuperOdom) as additional baselines
-- Create a 3D world.sdf for LIO-based navigation and mapping
-- Create a 3D world.sdf WITHOUT GPS PLUGIN (and configure PX4/ArduPilot accordingly) for LIO-based navigation and mapping
-- Add examples in the README.md showing exploration of these world with 3D mapping
-- Develop own/custom SLAM/collaborative SLAM approach
-- Study how to compare/use/fuse LIO with PX4/ArduPilot state estimation
-
-## Future Work
-
-- Support for [NVIDIA DeepStream](https://developer.nvidia.com/deepstream-sdk) in the aircraft_ws YOLO node
-- Support for [Betaflight SITL](https://betaflight.com/docs/development/SITL) interfaced *via* UDP or [MultiWii Serial Protocol (MSP)](https://github.com/betaflight/betaflight/tree/master/src/main/msp)
-- Support for a [Isaac Sim](https://github.com/isaac-sim/IsaacSim) higher fidelity rendering
-- Support for [JSBSim](https://github.com/JSBSim-Team/jsbsim) flight dynamics
-- Support for [ArduPilot's DDS interface](https://ardupilot.org/dev/docs/ros2-interfaces.html)
+Distributed under the MIT License. See `LICENSE.txt` for more information. Copyright (c) 2025 Jacopo Panerati
 
 -->

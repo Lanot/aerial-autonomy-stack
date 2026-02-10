@@ -29,10 +29,13 @@ REPOS=( # Format: "URL;BRANCH;LOCAL_DIR_NAME"
   "https://github.com/PX4/flight_review.git;main;flight_review"
   # Ground image
   "https://github.com/mavlink/c_library_v2;master;c_library_v2"
+  "https://github.com/mavlink-router/mavlink-router;master;mavlink-router"
   # Aircraft image
   "https://github.com/PX4/px4_msgs.git;release/1.16;px4_msgs"
   "https://github.com/eProsima/Micro-XRCE-DDS-Agent.git;master;Micro-XRCE-DDS-Agent"
   # "https://github.com/microsoft/onnxruntime.git;v1.22.1;onnxruntime" # Only for the deployment build
+  # "https://github.com/Livox-SDK/Livox-SDK2.git;master;Livox-SDK2" # Only for the deployment build
+  # "https://github.com/Livox-SDK/livox_ros_driver2.git;master;livox_ros_driver2" # Only for the deployment build
   "https://github.com/PRBonn/kiss-icp.git;main;kiss-icp"
 )
 

@@ -1,16 +1,12 @@
 name: simulation-image amd64
 
 on:
-  schedule:
-    - cron: '0 3 * * 6'
-  workflow_dispatch: {}
-  pull_request:
-    branches: [ "main" ]
+  workflow_call: {}
 
 jobs:
   build:
     runs-on: ubuntu-22.04
-    timeout-minutes: 60
+    timeout-minutes: 90
     permissions:
       contents: read
       packages: write
@@ -32,6 +28,8 @@ jobs:
 
       - name: Add swap space
         run: |
+          sudo swapoff -a || true
+          sudo rm -f /swapfile
           sudo fallocate -l 10G /swapfile
           sudo chmod 600 /swapfile
           sudo mkswap /swapfile
@@ -44,6 +42,14 @@ jobs:
 
       - name: Check disk space
         run: df -h
+
+      - name: Move Docker to /mnt
+        run: |
+          sudo systemctl stop docker
+          sudo mkdir -p /mnt/docker
+          echo '{"data-root": "/mnt/docker"}' | sudo tee /etc/docker/daemon.json
+          sudo systemctl start docker
+          docker info | grep "Docker Root Dir"
 
       - name: Check out the repository
         uses: actions/checkout@v4
@@ -61,5 +67,21 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build the simulation image (optionally, add --push)
-        run: docker buildx build -t ghcr.io/jacopopan/simulation-image:latest -f ./scripts/docker/Dockerfile.simulation .
+      - name: Determine Docker tag
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          EVENT_NUMBER: ${{ github.event.number }}
+          REF_NAME: ${{ github.ref_name }}
+          REF: ${{ github.ref }}
+        run: |
+          if [ "$EVENT_NAME" == "pull_request" ]; then
+            echo "DOCKER_TAG=pr-${EVENT_NUMBER}" >> $GITHUB_ENV
+          elif [ "$REF" == "refs/heads/main" ]; then
+            echo "DOCKER_TAG=latest" >> $GITHUB_ENV
+          else
+            BRANCH_TAG=$(echo "$REF_NAME" | tr '/' '-')
+            echo "DOCKER_TAG=${BRANCH_TAG}" >> $GITHUB_ENV
+          fi
+
+      - name: Build the simulation image
+        run: docker buildx build --push -t ghcr.io/jacopopan/simulation-image:${{ env.DOCKER_TAG }} -f ./scripts/docker/Dockerfile.simulation .
