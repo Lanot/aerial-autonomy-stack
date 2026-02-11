@@ -187,22 +187,15 @@ aerial-autonomy-stack
 
 ## 1. Installation
 
-> AAS is tested on Ubuntu 22.04/24.04 with `nvidia-driver-580` using an i7-11 with 16GB RAM and RTX 3060
-> 
-> On Ubuntu, read [`REQUIREMENTS_UBUNTU.md`](/supplementary/REQUIREMENTS_UBUNTU.md) to setup the requirements (Docker Engine, `nvidia-ctk`)
->
-> On Windows 11, read [`REQUIREMENTS_WSL.md`](/supplementary/REQUIREMENTS_WSL.md) to setup the requirements (WSL, etc.)
-
 ```sh
 sudo apt update && sudo apt install -y git git-lfs xterm xfonts-base && git lfs install
 
 git clone https://github.com/JacopoPan/aerial-autonomy-stack.git
 cd aerial-autonomy-stack/scripts/
 
-./sim_build.sh
-# Note: the 1st build takes ~30GB of space and ~25' with good internet (`Ctrl + c` and restart if needed)
-# Alternatively, pre-build images are available on ghcr.io:
-# docker pull ghcr.io/jacopopan/[aircraft|ground|simulation]-image:latest
+./check_requirements.sh                             # If needed, refer to REQUIREMENTS_UBUNTU.md and REQUIREMENTS_WSL.md to install the requirements
+./sim_build.sh                                      # Note: the 1st build takes ~30GB of space and ~25' with good internet (`Ctrl + c` and restart if needed)
+                                                    # Alternatively, pre-build images are available on ghcr.io: docker pull ghcr.io/jacopopan/[aircraft|ground|simulation]-image:latest
 ```
 
 <div align="right">
@@ -210,6 +203,13 @@ cd aerial-autonomy-stack/scripts/
     <img src="https://github.com/JacopoPan/aerial-autonomy-stack/actions/workflows/aas-amd64-build-and-test.yml/badge.svg" alt="aas build-and-test amd64">
   </a>
 </div>
+
+> [!TIP]
+> AAS is tested on Ubuntu 22.04/24.04 with `nvidia-driver-580` using an i7-11 with 16GB RAM and RTX 3060
+>
+> On Ubuntu, read [`REQUIREMENTS_UBUNTU.md`](/supplementary/REQUIREMENTS_UBUNTU.md) to setup the requirements (Docker Engine, `nvidia-ctk`)
+>
+> On Windows 11, read [`REQUIREMENTS_WSL.md`](/supplementary/REQUIREMENTS_WSL.md) to setup the requirements (WSL, etc.)
 
 ## 2. Simulation
 
@@ -477,7 +477,11 @@ Once done, detach Tmux (and remove the containers) with `Ctrl + b`, then `d`
 ---
 > You've done a man's job, sir. I guess you're through, huh?
 
-<!-- 
+<!--
+
+## License
+
+Distributed under the MIT License. See `LICENSE.txt` for more information. Copyright (c) 2025 Jacopo Panerati
 
 ## Known Issues
 
@@ -489,9 +493,5 @@ Once done, detach Tmux (and remove the containers) with `Ctrl + b`, then `d`
 - In ArdupilotInterface's action callbacks, std::shared_lock<std::shared_mutex> lock(node_data_mutex_); could be used on the reads of lat_, lon_, alt_
 - QGC does not save roll and pitch in the telemetry bar for PX4 VTOLs (MAV_TYPE 22)
 - PX4 quad max tilt is limited by the anti-windup gain (zero it to deactivate it): const float arw_gain = 2.f / _gain_vel_p(0);
-
-## License 
-
-Distributed under the MIT License. See `LICENSE.txt` for more information. Copyright (c) 2025 Jacopo Panerati
 
 -->

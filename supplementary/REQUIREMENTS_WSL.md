@@ -48,6 +48,9 @@ free -h                                               # (optional) Check the mem
 > free -h                           # Check the available memory and swap reflect .wslconfig
 > ```
 
+> [!TIP]
+> Run `scripts/check_requirements.sh` **inside WLS** to verify if you need to follow the steps below
+
 ## Install the NVIDIA Driver on Windows 11
 
 Download and install the **NVIDIA driver 580 on Windows** using the [NVIDIA App](https://www.nvidia.com/en-us/software/nvidia-app/) 

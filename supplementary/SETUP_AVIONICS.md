@@ -27,7 +27,7 @@ sdkmanager                          # Log in with your https://developer.nvidia.
 - With a screen, mouse, and keyboard connected to the Jetson basedboad, log in, finish the configuration, power-off, put the board out of recovery mode and power-on again
 - Select an appropriate "Power Mode" (e.g. MAXN or 25W)
 
-<!-- 
+<!--
 - [PX4 documentation](https://github.com/PX4/PX4-Autopilot/blob/main/docs/en/companion_computer/holybro_pixhawk_jetson_baseboard.md#flashing-the-jetson-board)
 -->
 
@@ -214,7 +214,7 @@ param set UXRCE_DDS_CFG 1000    # Use DDS over Ethernet
 
 One should be able to `ping 10.10.1.44` (the Orin NX) from MAVLink Console on QGC; and `ping 10.10.1.33` (the autopilot) from a terminal on the Orin NX
 
-<!-- 
+<!--
 - [PX4 documentation](https://github.com/PX4/PX4-Autopilot/blob/main/docs/en/companion_computer/holybro_pixhawk_jetson_baseboard.md#ethernet-setup-using-netplan)
 -->
 
@@ -233,13 +233,9 @@ SERIAL2_PROTOCOL MAVLink2
 > [!CAUTION]
 > Match ArduPilot parameter `SYSID_THISMAV` with the `DRONE_ID` used to launch `./deploy_run.sh`: this is the `ROS_DOMAIN_ID` of the aircraft container
 
-<!-- 
-
-## Additional Resources
-
+<!--
 - [ArduPilot serial configuration](https://ardupilot.org/copter/docs/common-serial-options.html)
 - [Jetson baseboard serial configuration](https://github.com/PX4/PX4-Autopilot/blob/main/docs/en/companion_computer/holybro_pixhawk_jetson_baseboard.md#serial-connection)
 - [MAVROS connection](https://github.com/mavlink/mavros/blob/ros2/mavros/README.md)
 - [Requesting MAVLink data from ArduPilot](https://ardupilot.org/dev/docs/mavlink-requesting-data.html)
-
 -->
