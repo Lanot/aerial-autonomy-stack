@@ -62,7 +62,7 @@
 
 > PRs to update dependencies to their latest stable release are always welcome
 >
-> Also update: [`check_requirements.sh`](/scripts/check_requirements.sh)
+> Also remember to update: [`check_requirements.sh`](/scripts/check_requirements.sh)
 
 - [x] Host OS: [Ubuntu 22.04/24.04 (LTS, ESM 4/2034)](https://ubuntu.com/about/release-cycle)
 - [x] Jetson OS: [L4T 36 (Ubuntu 22-based)/JetPack 6 (latest major release for Orin as of 2/2026)](https://developer.nvidia.com/embedded/jetpack-archive)

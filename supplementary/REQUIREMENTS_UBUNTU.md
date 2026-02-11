@@ -3,7 +3,7 @@
 > [!TIP]
 > These instructions are tested using Ubuntu 22.04.5 LTS and Ubuntu 24.04.3 LTS
 >
-> Run `scripts/check_requirements.sh` to verify if you need to follow the steps below
+> Run [`check_requirements.sh`](/scripts/check_requirements.sh) to verify whether you need to follow the steps below
 
 ## Install Ubuntu with NVIDIA Driver
 

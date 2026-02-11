@@ -49,7 +49,7 @@ free -h                                               # (optional) Check the mem
 > ```
 
 > [!TIP]
-> Run `scripts/check_requirements.sh` **inside WLS** to verify if you need to follow the steps below
+> Run [`check_requirements.sh`](/scripts/check_requirements.sh) **inside WSL** to verify whether you need to follow the steps below
 
 ## Install the NVIDIA Driver on Windows 11
 
