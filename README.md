@@ -194,7 +194,7 @@ git clone https://github.com/JacopoPan/aerial-autonomy-stack.git
 cd aerial-autonomy-stack/scripts/
 
 ./check_requirements.sh                               # If needed, refer to REQUIREMENTS_UBUNTU.md and REQUIREMENTS_WSL.md to install the requirements
-./sim_build.sh                                        # Note: the 1st build takes ~30GB of space and ~30' with fast internet (`Ctrl + c` and restart if needed, cached stages will be preserved); alternatively, pre-build images are available on ghcr.io: docker pull ghcr.io/jacopopan/[aircraft|ground|simulation]-image:latest
+./sim_build.sh                                        # The 1st build takes ~30GB and ~30' with good internet (`Ctrl + c` and restart if needed, cached stages will be preserved); alternatively, pre-build images are available on ghcr.io: docker pull ghcr.io/jacopopan/[aircraft|ground|simulation]-image:latest
 ```
 
 <div align="right">
@@ -214,12 +214,21 @@ cd aerial-autonomy-stack/scripts/
 
 ![workspace](https://github.com/user-attachments/assets/ad909fcc-69de-44ac-84b3-c5bc7a1c896f)
 
-> On a low-mid range laptop—i7-11 with 16GB RAM and RTX 3060—AAS can simulate a PX4 quad with YOLO and LiDAR at **10x real-time-factor** with flag `RTF=0.0`. Run multiple `sim_run.sh` in parallel adding flag `INSTANCE=1`, `INSTANCE=2`, etc. for even higher throughput.
-
 ```sh
 # 1. Start AAS
 cd aerial-autonomy-stack/scripts
 AUTOPILOT=px4 NUM_QUADS=1 NUM_VTOLS=1 WORLD=swiss_town RTF=3.0 ./sim_run.sh                   # Start a simulation, check the script for more options (note: ArduPilot SITL checks take ~40s before being ready to arm)
+
+# Options (find more in sim_run.sh):
+# AUTOPILOT=px4, ardupilot
+# HEADLESS=true, false
+# CAMERA=true, false
+# LIDAR=true, false
+# NUM_QUADS=0, 1, ...
+# NUM_VTOLS=0, 1, ...
+# WORLD=impalpable_greyness, apple_orchard, shibuya_crossing, swiss_town
+# RTF==1.0, use 0.0 for "as fast as possible"
+# INSTANCE=0, 1, ... (integer ID to run multiple parallel simulations)
 ```
 
 In any of the `QUAD` or `VTOL` Xterm terminals:
@@ -233,13 +242,14 @@ In the `Simulation`'s Xterm terminal:
 # 3. Analyze
 /aas/simulation_resources/scripts/plot_logs.sh                                                # Analyze the flight logs at http://10.42.90.100:5006/browse or in MAVExplorer
 ```
-
-Optionally, add or disable **wind effects**, in the `Simulation`'s Xterm terminal:
+<details>
+<summary>Add or disable <b>wind effects</b>, in the `Simulation`'s Xterm terminal <i>(click to expand)</i></summary>
 
 ```sh
 python3 /aas/simulation_resources/scripts/gz_wind.py --from_west 0.0 --from_south 3.0
 python3 /aas/simulation_resources/scripts/gz_wind.py --stop_wind
 ```
+</details>
 
 > [!TIP]
 > <details>
@@ -403,10 +413,6 @@ docker stop $(docker ps -q) && docker container prune -f && docker network prune
 
 ## 4. Jetson Deployment
 
-> AAS is tested on a [Holybro Jetson Baseboard](https://holybro.com/products/pixhawk-jetson-baseboard) with Pixhawk 6X and NVIDIA Orin NX 16GB on an [X650](https://holybro.com/collections/multicopter-kit/products/x650-development-kit)
-> 
-> Read [`SETUP_AVIONICS.md`](/supplementary/SETUP_AVIONICS.md) to setup the requirements on the Jetson and configure the Pixhawk
-
 ```sh
 sudo apt update && sudo apt install -y git git-lfs
 
@@ -422,7 +428,12 @@ cd aerial-autonomy-stack/scripts/
   </a>
 </div>
 
-Finally, start the `aircraft-image` on Jetson Orin NX
+>[!TIP]
+> AAS is tested on a [Holybro Jetson Baseboard](https://holybro.com/products/pixhawk-jetson-baseboard) with Pixhawk 6X and NVIDIA Orin NX 16GB on an [X650](https://holybro.com/collections/multicopter-kit/products/x650-development-kit)
+>
+> Read [`SETUP_AVIONICS.md`](/supplementary/SETUP_AVIONICS.md) to setup the requirements on the Jetson and configure the Pixhawk
+
+Start the `aircraft-image` on Jetson Orin NX
 
 ```sh
 cd aerial-autonomy-stack/scripts/

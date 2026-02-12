@@ -48,6 +48,8 @@ free -h                                               # (optional) Check the mem
 > free -h                           # Check the available memory and swap reflect .wslconfig
 > ```
 
+---
+
 > [!TIP]
 > Run [`check_requirements.sh`](/scripts/check_requirements.sh) **inside WSL** to verify whether you need to follow the steps below
 
