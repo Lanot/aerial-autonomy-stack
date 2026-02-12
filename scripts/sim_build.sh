@@ -68,7 +68,7 @@ if [ "$BUILD_DOCKER" = "true" ]; then
   # The first build takes <5' and creates an 9GB image (8GB for ros-humble-desktop with nvidia runtime)
   docker build -t ground-image -f "${SCRIPT_DIR}/docker/Dockerfile.ground" "${SCRIPT_DIR}/.."
 
-  # The first build takes ~10' and creates an 18GB image (8GB for ros-humble-desktop with nvidia runtime, 7GB for YOLOv8, ONNX)
+  # The first build takes ~10' and creates an 18GB image (8GB for ros-humble-desktop with nvidia runtime, 7GB for YOLO, ONNX)
   docker build -t aircraft-image -f "${SCRIPT_DIR}/docker/Dockerfile.aircraft" "${SCRIPT_DIR}/.."
 else
   echo -e "Skipping Docker builds"

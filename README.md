@@ -5,7 +5,7 @@
 *Aerial autonomy stack* (AAS) is an all-in-one software stack to:
 
 1. **Develop** multi-drone autonomy—with ROS2, PX4, and ArduPilot
-2. **Simulate** faster-than-real-time perception and control—with YOLOv8 and 3D LiDAR 
+2. **Simulate** faster-than-real-time perception and control—with YOLO and 3D LiDAR
 3. **Deploy** in real drones—with JetPack and NVIDIA Orin
 
 Also read [`RATIONALE.md`](/supplementary/RATIONALE.md) or [ask Perplexity <img width="16" alt="logo" src="https://github.com/user-attachments/assets/458351d3-ccc7-4fa4-b49a-86a3492170e5" /> about AAS](https://www.perplexity.ai/search?q=I%20am%20looking%20at%20the%20repo%20https%3A%2F%2Fgithub.com%2FJacopoPan%2Faerial-autonomy-stack.%20Summarize%20what%20this%20code%20does,%20give%20me%20an%20assessment%20of%20the%20code%20quality%20and%20potential,%20and%20tell%20me%20how%20it%20can%20help%20me%20and%20my%20projects.); if you wish, please cite this work as:
@@ -26,7 +26,7 @@ Also read [`RATIONALE.md`](/supplementary/RATIONALE.md) or [ask Perplexity <img 
 
 - **PX4 and ArduPilot multi-vehicle** simulation (**quadrotors and VTOLs**)
 - ROS2 action-based autopilot interface (*via* XRCE-DDS or MAVROS)
-- **YOLOv8** (with ONNX GPU Runtimes) and **LiDAR** Odometry (with [KISS-ICP](https://github.com/PRBonn/kiss-icp))
+- **YOLO** (with ONNX GPU Runtimes) and **LiDAR** Odometry (with [KISS-ICP](https://github.com/PRBonn/kiss-icp))
 - 3D worlds for perception-based simulation
 - **Steppable** [Gymnasium environment](https://gymnasium.farama.org/index.html) and **faster-than-real-time**, **multi-instance** simulation
 - Gazebo's wind effects plugin
