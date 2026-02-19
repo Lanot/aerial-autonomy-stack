@@ -18,7 +18,6 @@ from cv_bridge import CvBridge
 
 
 CONF_THRESH = 0.5
-NMS_THRESH = 0.45 # Non-Maximal Suppression
 
 class YoloInferenceNode(Node):
     def __init__(self, headless, hitl, hfov, vfov):
@@ -37,15 +36,15 @@ class YoloInferenceNode(Node):
         self.colors = (colors_rgba[:, [2, 1, 0]] * 255).astype(np.uint8) # From RGBA (0-1 float) to BGR (0-255 int)
 
         # Load model and runtime
-        # Options, from fastest to most accurate, <10MB to >100MB: yolov8n, yolov8s, yolov8m, yolov8l, yolov8x, export in Dockerfile.aircraft
+        # Options, from fastest to most accurate, <10MB to >100MB: yolo26n, yolo26s, yolo26m, yolo26l, yolo26x, export in Dockerfile.aircraft
         if self.architecture == 'x86_64':
-            model_path = "/aas/yolo/yolov8n_320.onnx" # Simulated camera in sensor_camera/model.sdf is 320x240
-            self.input_size = 320 # YOLOv8 input size
+            model_path = "/aas/yolo/yolo26n_320.onnx" # Simulated camera in sensor_camera/model.sdf is 320x240
+            self.input_size = 320 # YOLO input size
             print("Loading CUDAExecutionProvider on AMD64 (x86) architecture.")
             self.session = ort.InferenceSession(model_path, providers=["CUDAExecutionProvider"]) # For simulation
         elif self.architecture == 'aarch64':
-            model_path = "/aas/yolo/yolov8n_640.onnx" # Real CSI camera IMX219-200 is 1280x720, we resize to 640x640 for YOLOv8 (this is slightly wasteful when self.hitl = True)
-            self.input_size = 640 # YOLOv8 input size
+            model_path = "/aas/yolo/yolo26n_640.onnx" # Real CSI camera IMX219-200 is 1280x720, we resize to 640x640 for YOLO (this is slightly wasteful when self.hitl = True)
+            self.input_size = 640 # YOLO input size
             print("Loading (with cache) TensorrtExecutionProvider on ARM64 architecture (Jetson).") # The first cache built takes ~10'
             cache_path = "/tensorrt_cache" # Mounted as volume by main_deploy.sh
             os.makedirs(cache_path, exist_ok=True)
@@ -219,51 +218,40 @@ class YoloInferenceNode(Node):
         # if frame.shape[2] == 4: # Handle 4-channel input (BGRx) to avoid "videoconvert ! video/x-raw, format=BGR ! "
         #     frame = frame[:, :, :3]
         h0, w0 = frame.shape[:2]
-        
+
         img = cv2.dnn.blobFromImage(frame, 1/255.0, (self.input_size, self.input_size), swapRB=True, crop=False)
-        
+
         with Profiler("ONNX Runtime Inference"):
             outputs = self.session.run(None, {self.input_name: img})
-        
-        preds = outputs[0][0].T
-        boxes = preds[:, :4]
-        scores = preds[:, 4:]
-        confidences = scores.max(axis=1)
-        class_ids = scores.argmax(axis=1)
-        
-        # Filter
+
+        # YOLO26 is NMS-free. Output shape is [1, max_det, 6] -> [batch, detections, [x1, y1, x2, y2, conf, class_id]]
+        preds = outputs[0][0]
+        boxes = preds[:, :4] # x1, y1, x2, y2
+        confidences = preds[:, 4]
+        class_ids = preds[:, 5].astype(int)
+
+        # Filter by confidence threshold
         mask = confidences > CONF_THRESH
-        
+
         if not mask.any():
             return np.array([]), np.array([]), np.array([])
-        
-        # Apply mask once
+
+        # Apply mask
         boxes = boxes[mask]
         confidences = confidences[mask]
         class_ids = class_ids[mask]
 
-        boxes = boxes.astype(np.float32)
-        nm_boxes = np.empty_like(boxes)
-        nm_boxes[:, 2] = boxes[:, 2] # Copy w
-        nm_boxes[:, 3] = boxes[:, 3] # Copy h
-        nm_boxes[:, 0] = boxes[:, 0] - (boxes[:, 2] * 0.5) # x_tl
-        nm_boxes[:, 1] = boxes[:, 1] - (boxes[:, 3] * 0.5) # y_tl
-        
-        # Apply Non-Maximal Suppression cv2.dnn.NMSBoxes expects [x_tl, y_tl, w, h]
-        indices = cv2.dnn.NMSBoxes(nm_boxes, confidences, CONF_THRESH, NMS_THRESH)
-        
-        if len(indices) == 0:
-            return np.array([]), np.array([]), np.array([])
+        # Convert [x1, y1, x2, y2] to [cx, cy, w, h]
+        w = boxes[:, 2] - boxes[:, 0]
+        h = boxes[:, 3] - boxes[:, 1]
+        cx = boxes[:, 0] + (w * 0.5)
+        cy = boxes[:, 1] + (h * 0.5)
+        boxes = np.column_stack((cx, cy, w, h)).astype(np.float32)
 
-        indices = np.array(indices).flatten() # indices might be a list or a tuple of arrays depending on cv2 version, flatten it
-        
-        boxes = boxes[indices]
-        confidences = confidences[indices]
-        class_ids = class_ids[indices]
-
+        # Apply scaling factors to match original frame size
         self.scale_factors[:] = [w0 / self.input_size, h0 / self.input_size, w0 / self.input_size, h0 / self.input_size]
         boxes *= self.scale_factors
-        
+
         return boxes, confidences, class_ids
 
     def publish_detections(self, frame_shape, boxes, confidences, class_ids):
@@ -356,7 +344,7 @@ class Profiler:
             Profiler._counts[self.name] = 0
 
 def main(args=None):
-    parser = argparse.ArgumentParser(description="YOLOv8 ROS2 Inference Node.")
+    parser = argparse.ArgumentParser(description="YOLO ROS2 Inference Node.")
     parser.add_argument('--headless', action='store_true', help="Run in headless mode.")
     parser.add_argument('--hitl', action='store_true', help="Open camerafrom gz-sim for HITL.")
     parser.add_argument('--hfov', type=float, default=90.0, help="Horizontal field of view in degrees.")
