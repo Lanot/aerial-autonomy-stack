@@ -37,6 +37,7 @@ if [[ "$GROUND" == "true" ]]; then
     --env NUM_QUADS=$NUM_QUADS --env NUM_VTOLS=$NUM_VTOLS \
     --env SIMULATED_TIME=$HITL \
     --env ROS_DOMAIN_ID=$GROUND_ID \
+    --env HOST_INPUT_GID=$(getent group input | cut -d: -f3) \
     --net=host \
     --privileged \
     --name ground-container \

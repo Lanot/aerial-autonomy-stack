@@ -128,6 +128,7 @@ windows:
   <% unless gnd_container %>
   - zenoh_and_qgc:
       layout: even-horizontal
+      pre: if [ -n "$HOST_INPUT_GID" ]; then groupadd -g "$HOST_INPUT_GID" host_input 2>/dev/null || true; usermod -aG host_input qgcuser; fi
       panes:
         - zenoh-bridge-ros2dds
         <% if headless %>

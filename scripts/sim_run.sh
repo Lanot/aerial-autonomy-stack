@@ -124,6 +124,7 @@ DOCKER_CMD="docker run -it --rm \
   --env SIM_SUBNET=$SIM_SUBNET --env GROUND_ID=$GROUND_ID \
   --env GND_CONTAINER=$GND_CONTAINER \
   --env ROS_DOMAIN_ID=$SIM_ID \
+  --env HOST_INPUT_GID=$(getent group input | cut -d: -f3) \
   --privileged \
   --name $SIM_CONT_NAME"
 # Configure network for HITL or SITL
@@ -154,6 +155,7 @@ if [[ "$HITL" == "false" ]]; then
       --env NUM_QUADS=$NUM_QUADS --env NUM_VTOLS=$NUM_VTOLS \
       --env SIMULATED_TIME=true \
       --env ROS_DOMAIN_ID=$GROUND_ID \
+      --env HOST_INPUT_GID=$(getent group input | cut -d: -f3) \
       --net=$SIM_NET_NAME --ip=${SIM_SUBNET}.90.${GROUND_ID} \
       --privileged \
       --name $GND_CONT_NAME"
