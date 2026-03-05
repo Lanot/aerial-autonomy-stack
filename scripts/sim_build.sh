@@ -65,6 +65,7 @@ DOWNLOAD_NEEDED=true
 if [ -f "$ZIP_FILE" ]; then
   CURRENT_HASH=$(sha256sum "$ZIP_FILE" | awk '{print $1}')
   if [ "$CURRENT_HASH" = "$EXPECTED_HASH" ]; then
+    echo "simulation_assets.zip already downloaded"
     DOWNLOAD_NEEDED=false
   fi
 fi
