@@ -5,6 +5,7 @@
   num_vtols = ENV.fetch('NUM_VTOLS', 0).to_i
 
   simulated_time = ENV.fetch('SIMULATED_TIME', 'false') == 'true'
+  remote_video_streams = ENV.fetch('REMOTE_VIDEO_STREAMS', 'false') == 'true'
 %>
 
 name: ground
@@ -77,3 +78,12 @@ windows:
             done
           )
         <% end %>
+
+  <% if !headless && remote_video_streams %>
+  - video_streams:
+      layout: tiled
+      panes:
+        <% (1..(num_quads + num_vtols)).each do |drone_id| %>
+        - python3 /aas/ground_resources/comms/udp_gst_receiver.py --port <%= 5000 + drone_id %> --name "Aircraft <%= drone_id %>"
+        <% end %>
+  <% end %>
