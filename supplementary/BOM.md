@@ -36,47 +36,53 @@ flowchart TB
         direction TB
         6X[6X Autopilot]
         Orin[NVIDIA Jetson Orin]
+        Orin <-->|"TELEM2 / ETH"| 6X
     end
-
-    Telem[Telemetry Radio]
+    
 
     subgraph Doodle_Lab_Radio ["Doodle Lab Radio"]
         direction TB
         EvalKit[Evaluation Kit]
         RadioMod[Radio Module]
+        EvalKit <-->|" "| RadioMod
     end
+    
+    Telem[Telemetry Radio]
+
+    Doodle_Lab_Radio ~~~ Telem
 
     GPS[GPS Module]
-    RC_Rx[R81 Receiver]
     Lidar[Livox 360]
     Camera[CSI ArduCam]
-    RC[RadioMaster Boxer RC]
 
-    %%%%%%%%%%
+    RC_Rx[R81 Receiver]
+    RC[RadioMaster Boxer RC]
+    RC_Rx <-->|"bind"| RC
+
     Batt -- "24V" --> PDB
     PDB -- "24V" --> Matek
     PDB -- "24V" --> Telem
     Matek -- "12V" --> Jetson_Baseboard
-    Doodle_Lab_Radio ~~~ Telem
+
     Jetson_Baseboard <-->|"TELEM1"| Telem
     GPS -- "GPS1" --> Jetson_Baseboard
     Jetson_Baseboard <-->|"RC IN"| RC_Rx
+
     Jetson_Baseboard ~~~ Lidar
-    Lidar -- "ETH" --> Jetson_Baseboard
-    Lidar ~~~ GPS
-    %%Matek -- "12V" --> Lidar
     Jetson_Baseboard ~~~ Camera
+    Lidar ~~~ GPS
+    
     Camera -- "CSI" --> Jetson_Baseboard
-    Orin <-->|"TELEM2 / ETH"| 6X
-    EvalKit <-->|" "| RadioMod
-    RC_Rx <-->|"bind"| RC
+    Lidar -- "ETH" --> Jetson_Baseboard
     Matek -- "5V" --> Doodle_Lab_Radio
     Jetson_Baseboard <-->|"USB 2.0 ETH Adapter"| Doodle_Lab_Radio
 
+    Matek -- "12V" --> Lidar
+
     %%%%%%%%%%
-    linkStyle 0,1,2,3,16 stroke:red,stroke-width:4px;    
-    linkStyle 5,6,7,9,12,14,17 stroke:blue,stroke-width:3px;
-    linkStyle 15 stroke:teal,stroke-width:3px,stroke-dasharray: 8 4;
+    linkStyle 3 stroke:teal,stroke-width:3px,stroke-dasharray: 8 4;
+    linkStyle 4,5,6,7,16,18 stroke:red,stroke-width:4px;    
+    linkStyle 8,9,10,14,15,17 stroke:blue,stroke-width:3px;
 ```
 
 [kit]:https://holybro.com/collections/x650-kits/products/x650-kits?variant=43994378240189
