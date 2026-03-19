@@ -208,8 +208,8 @@ param set MAV_SYS_ID 1
 param set UXRCE_DDS_DOM_ID 1
 
 # Optionally
-param set MAV_2_CONFIG 0        # Disable MAVLINK on Ethernet (so Ethernet is used for XRCE-DDS only), if needed, also check params MAV_0_CONFIG, MAV_1_CONFIG
-param set UXRCE_DDS_CFG 1000    # Use DDS over Ethernet
+param set MAV_2_CONFIG 0            # Disable MAVLINK on Ethernet (so Ethernet is used for XRCE-DDS only), if needed, also check params MAV_0_CONFIG, MAV_1_CONFIG
+param set UXRCE_DDS_CFG 1000        # Use DDS over Ethernet
 ```
 
 > [!CAUTION]
@@ -298,16 +298,16 @@ WIP
 
 ```sh
 # GPS
-GPSx_TYPE           1 # Auto, GPS1 or GPS2 depending on the connector used on the Jetson Baseboard
+GPSx_TYPE           1               # Auto, GPS1 or GPS2 depending on the JST connector used on the Jetson Baseboard
 # ESCs
-SERVOx_FUNCTION     0 # Disabled, for SERVO1 to 4, these are channels 1 to 4 on IO PWM
-MOT_PWM_TYPE	      6 # DShot600, for the Tekko32 F4 45A ESCs, using the first 4 channels on FMU PWM, i.e. SERVO9 to 12
-SERVO9_FUNCTION     33 # Motor 1, channel 1 on FMU PWM
-SERVO10_FUNCTION    34 # Motor 2, channel 2 on FMU PWM
-SERVO11_FUNCTION    35 # Motor 3, channel 3 on FMU PWM
-SERVO12_FUNCTION    36 # Motor 4, channel 4 on FMU PWM
-SERVOx_MIN          1000 # For SERVO9 to 12
-SERVOx_MAX          2000 # For SERVO9 to 12
-SERVOx_TRIM         1000 # For SERVO9 to 12
-# If needed, set BRD_SAFETY_DEFLT to 0 (Disabled) or make sure BRD_SAFETY_MASK ignores channels 9 to 12
+SERVOx_FUNCTION     0               # Disabled, for SERVO1 to 4, these are channels 1 to 4 on IO PWM
+MOT_PWM_TYPE	      6               # DShot600, for the Tekko32 F4 45A ESCs, using the first 4 channels on FMU PWM, i.e. SERVO9 to 12
+SERVO9_FUNCTION     33              # Motor 1, channel 1 on FMU PWM
+SERVO10_FUNCTION    34              # Motor 2, channel 2 on FMU PWM
+SERVO11_FUNCTION    35              # Motor 3, channel 3 on FMU PWM
+SERVO12_FUNCTION    36              # Motor 4, channel 4 on FMU PWM
+SERVOx_MIN          1000            # For SERVO9 to 12
+SERVOx_MAX          2000            # For SERVO9 to 12
+SERVOx_TRIM         1000            # For SERVO9 to 12
+# If needed to configure the ESCs, remove the propellers and set BRD_SAFETY_DEFLT to 0 (Disabled) or make sure BRD_SAFETY_MASK ignores channels 9 to 12
 ```
