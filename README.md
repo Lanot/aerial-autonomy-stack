@@ -237,10 +237,10 @@ AUTOPILOT=px4 NUM_QUADS=1 NUM_VTOLS=1 WORLD=swiss_town HEADLESS=false RTF=3.0 ./
 In a new terminal:
 ```sh
 # Fly all drones
-for i in {1..2}; do
-  docker exec -d aircraft-container-inst0_$i bash -c "source /opt/ros/humble/setup.bash &&
+for ID in {1..2}; do
+  docker exec -d aircraft-container-inst0_$ID bash -c "source /opt/ros/humble/setup.bash &&
     source /aas/github_ws/install/setup.bash && source /aas/aircraft_ws/install/setup.bash &&
-    ros2 run mission mission --ros-args -r __ns:=/Drone$i -p use_sim_time:=true"
+    ros2 run mission mission --conops yalla.yaml --ros-args -r __ns:=/Drone$ID -p use_sim_time:=true"
 done
 ```
 

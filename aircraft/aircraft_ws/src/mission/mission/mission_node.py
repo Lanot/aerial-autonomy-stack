@@ -29,6 +29,9 @@ class MissionNode(Node):
 
         self.mission_plan = []
         self.get_logger().info(f"Loading conops from: {mission_file}")
+
+        if not os.path.isabs(mission_file):
+            mission_file = os.path.join('/aas/aircraft_resources/missions/', mission_file)
         try:
             with open(mission_file, 'r') as f:
                 data = yaml.safe_load(f)
@@ -417,7 +420,7 @@ class MissionNode(Node):
 
 def main(args=None):
     parser = argparse.ArgumentParser(description="Mission Node.")
-    parser.add_argument('--conops', type=str, default='/aas/aircraft_resources/missions/test_mission.yaml', help="Path to the mission YAML file")
+    parser.add_argument('--conops', type=str, default='yalla.yaml', help="Path to the mission YAML file")
 
     cli_args, ros_args = parser.parse_known_args()
 
