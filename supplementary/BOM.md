@@ -115,7 +115,7 @@ TODO
 
 ```sh
 # GPS module
-GPS1_TYPE           1               # Auto, GPS1_TYPE or GPS2_TYPE depending on the JST connector used on the Jetson Baseboard
+GPSx_TYPE           1               # Auto, GPS1_TYPE or GPS2_TYPE depending on the JST connector used on the Jetson Baseboard
 
 # DShot ESCs (Tekko32 F4 45A)
 SERVOx_FUNCTION     0               # Disabled, for SERVO1 to 4, these are channels 1 to 4 on IO PWM
@@ -131,7 +131,7 @@ SERVOx_TRIM         1000            # For SERVO9 to 12
 # In QGC -> Vehicle Configuration -> Motors, use the sliders to verify motor numbering and spin direction; reverse with SERVO_BLH_RVMASK, if necessary
 
 # Motor thrust curve exponent (T-Motor MN4014 KV330s with Gemfan 1555 propellers)
-MOT_THST_EXPO       0.71            # For 15in props, 0.0 is linear, 1.0 is second order curve
+MOT_THST_EXPO       0.7             # For 15in props, 0.0 is linear, 1.0 is second order curve
 # (optional) lower MOT_SPIN_ARM and MOT_SPIN_MIN from the 0.1 and 0.15 defaults to 0.05, 0.1
 
 # Limit RPY acceleration (in centidegrees per square second)
@@ -151,18 +151,16 @@ ATC_RAT_PIT_FLTD    10              # Pitch axis rate controller derivative freq
 ATC_RAT_RLL_FLTD    10              # Roll axis rate controller derivative frequency in Hz, default is 20
 # Check INS_GYRO_FILTER, the gyro filter cutoff frequency is 20
 
-# (optional) filter vibration with BDShot telemetry (requires target Pixhawk6X-bdshot)
-SERVO_BLH_BDMASK    3840            # Bitmask to activate bidirectional DShot ESC telemetry on channels 9 to 12
-SERVO_BLH_POLES     24              # Default is 14, T-Motor MN4014 KV330s are 18N24P
-INS_HNTCH_ENABLE    1               # Enable harmonic notch filter (reboot to set the other parameters)
-INS_HNTCH_MODE      3               # Use ESC telemetry
-INS_HNTCH_REF       1.0             # Setting for ESC telemetry
-INS_HNTCH_FREQ      40              # Base frequency lower than the default 80 for the X650
+# Harmonic notch filter
+INS_HNTCH_ENABLE    1               # Enable (reboot to set the other parameters)
+INS_HNTCH_MODE      1               # Throttle tracking
+INS_HNTCH_REF       0.4             # Anchor point (should match the measured MOT_THST_HOVER)
+INS_HNTCH_FREQ      40              # Base frequency, lower than the default 80 for the X650
 INS_HNTCH_BW        20              # Half of INS_HNTCH_FREQ
-INS_HNTCH_OPTS      2               # Bitmask, multi-source is the second bit
+# Check INS_HNTCH_OPTS is set to 0
 
 # In QGC -> Vehicle Configuration -> Radio, calibrate the Radiomaster Boxer RC
 # In QGC -> Vehicle Configuration -> Flight Modes, set one switch for Stabilized/AltHold/Loiter, one for RTL
 # In QGC -> Vehicle Configuration -> Safety, set battery and general failsafes, RTL settings
-# In QGC -> Vehicle Configuration -> Sensors, calibrate accelerometer, horizon level, and compass (outdoors)
+# In QGC -> Vehicle Configuration -> Sensors, calibrate accelerometer, level horizon, and compass (outdoors)
 ```
