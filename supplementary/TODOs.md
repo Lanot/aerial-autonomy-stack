@@ -16,12 +16,6 @@
 
 > Potential for technical spikes/long-term, nice-to-have features
 
-- Use ArduPilot ROS2 DDS interface instead of or alongside MAVROS
-    - https://github.com/ArduPilot/ardupilot/tree/master/Tools/ros2#readme
-    - https://ardupilot.org/dev/docs/ros2-sitl.html
-- Add support for tail-sitter models
-    - https://github.com/ArduPilot/ardupilot_gazebo/tree/main/models/zephyr
-    - https://github.com/PX4/PX4-gazebo-models/tree/main/models/quadtailsitter
 - Integrate a GIS world generator (e.g., Cesium)
     - https://github.com/CesiumGS/cesium-native
 - Integrate a photorealistic simulator (e.g., IsaacSim)
