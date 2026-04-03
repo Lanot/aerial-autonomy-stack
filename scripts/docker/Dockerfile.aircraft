@@ -11,7 +11,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 # Update the package list and install basic dependencies
 RUN apt update \
     && apt install -y --no-install-recommends \
-        wget gosu htop vim ruby tmux net-tools iproute2 iputils-ping netcat-openbsd \
+        wget gosu htop vim ruby tmux xclip net-tools iproute2 iputils-ping netcat-openbsd \
         python3-pip python3-venv \
         mesa-utils \
     && gem install tmuxinator \
@@ -93,7 +93,7 @@ RUN /opt/ros/humble/lib/mavros/install_geographiclib_datasets.sh
 ################################################################################
 FROM ros2-px4msgs-dds-mavros-image AS ros2-px4msgs-dds-mavros-yolo-image
 
-# Install YOLOv8 and ONNX in virtual environment /yolo-env/
+# Install YOLO and ONNX in virtual environment /yolo-env/
 # See https://github.com/ultralytics/ultralytics/blob/main/README.md and https://onnxruntime.ai/getting-started
 RUN python3 -m venv /yolo-env
 RUN /yolo-env/bin/pip3 install --no-cache-dir --upgrade pip && \
@@ -152,7 +152,7 @@ RUN apt update && \
         'CMAKE_POLICY_VERSION_MINIMUM=3.5' \
         --allow_running_as_root && \
     cd /aas/github_apps/onnxruntime/build/Linux/Release/dist && \
-    pip3 install onnxruntime_gpu-1.22.1-cp310-cp310-linux_aarch64.whl && \
+    pip3 install onnxruntime_gpu-1.23.2-cp310-cp310-linux_aarch64.whl && \
     cd /aas/github_apps/onnxruntime/build/Linux/Release && \
     sudo make install && \
     sudo ldconfig && \
@@ -209,14 +209,14 @@ FROM ros2-px4msgs-dds-mavros-yolo-kissicp-zenoh-image AS aircraft-dev-image
 
 # Save the YOLO model weights (ONNX, Opset 12) and class names
 WORKDIR /aas/yolo
-# Model options (from fastest to most accurate, <10MB to >100MB): yolov8n, yolov8s, yolov8m, yolov8l, yolov8x
-# Export standard 640 static (for Jetson deployment) as yolov8n_640.onnx and smaller 320 static (for SITL/HITL) as yolov8n_320.onnx
-RUN /yolo-env/bin/python3 -c "from ultralytics import YOLO; YOLO('yolov8n.pt').export(format='onnx', opset=12, imgsz=640)" && \
-    mv yolov8n.onnx yolov8n_640.onnx && \
-    /yolo-env/bin/python3 -c "from ultralytics import YOLO; YOLO('yolov8n.pt').export(format='onnx', opset=12, imgsz=320)" && \
-    mv yolov8n.onnx yolov8n_320.onnx && \
-    /yolo-env/bin/python3 -c "import json; from ultralytics import YOLO; print(json.dumps(YOLO('yolov8n.pt').names))" | grep '{' > coco.json && \
-    rm yolov8n.pt
+# Model options (from fastest to most accurate, <10MB to >100MB): yolo26n, yolo26s, yolo26m, yolo26l, yolo26x
+# Export standard 640 static as yolo26n_640.onnx and smaller 320 static as yolo26n_320.onnx
+RUN /yolo-env/bin/python3 -c "from ultralytics import YOLO; YOLO('yolo26n.pt').export(format='onnx', opset=12, imgsz=640)" && \
+    mv yolo26n.onnx yolo26n_640.onnx && \
+    /yolo-env/bin/python3 -c "from ultralytics import YOLO; YOLO('yolo26n.pt').export(format='onnx', opset=12, imgsz=320)" && \
+    mv yolo26n.onnx yolo26n_320.onnx && \
+    /yolo-env/bin/python3 -c "import json; from ultralytics import YOLO; print(json.dumps(YOLO('yolo26n.pt').names))" | grep '{' > coco.json && \
+    rm yolo26n.pt
 
 # Install PlotJuggler
 RUN apt-get update && \
@@ -241,6 +241,9 @@ COPY aircraft/aircraft_resources/patches/apm_pluginlists.yaml /opt/ros/humble/sh
 RUN ln -s /aas/aircraft_resources/patches/cancellable_action.py /usr/local/bin/cancellable_action
 RUN chmod +x /aas/aircraft_resources/patches/cancellable_action.py
 
+# Copy sensor configuration
+COPY simulation/simulation_resources/aircraft_models/sensor_config.yaml /aas/aircraft_resources/sensor_config.yaml
+
 # Source the workspaces
 RUN echo "source /aas/github_ws/install/setup.bash" >> /root/.bashrc
 RUN echo "source /aas/aircraft_ws/install/setup.bash" >> /root/.bashrc
@@ -249,4 +252,5 @@ RUN echo "source /aas/aircraft_ws/install/setup.bash" >> /root/.bashrc
 # Final config
 WORKDIR /aas
 COPY aircraft/aircraft.yml.erb /aas/aircraft.yml.erb
+COPY simulation/simulation_resources/patches/tmux.conf /root/.tmux.conf
 ENTRYPOINT ["tmuxinator", "start", "-p", "/aas/aircraft.yml.erb"]

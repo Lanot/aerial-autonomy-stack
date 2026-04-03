@@ -188,6 +188,7 @@ class AASEnv(gym.Env):
                 # "GROUND_ID": self.GROUND_ID,
                 "GND_CONTAINER": str(self.GND_CONTAINER).lower(),
                 "ROS_DOMAIN_ID": self.SIM_ID,
+                # "HOST_INPUT_GID": "", # Only necessary to let qgcuser have permissions over /dev/input/, e.g., to use a joystick
                 "GYMNASIUM" : "true",
                 "GYM_FREQ_HZ" : str(self.GYM_FREQ_HZ),
                 "GYM_INIT_DURATION" : str(self.GYM_INIT_DURATION),

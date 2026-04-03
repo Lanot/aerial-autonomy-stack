@@ -5,10 +5,10 @@
 *Aerial autonomy stack* (AAS) is an all-in-one software stack to:
 
 1. **Develop** multi-drone autonomy—with ROS2, PX4, and ArduPilot
-2. **Simulate** faster-than-real-time perception and control—with YOLOv8 and 3D LiDAR 
+2. **Simulate** faster-than-real-time perception and control—with YOLO and 3D LiDAR
 3. **Deploy** in real drones—with JetPack and NVIDIA Orin
 
-Also read [`RATIONALE.md`](/supplementary/RATIONALE.md) or [ask Perplexity <img width="16" alt="logo" src="https://github.com/user-attachments/assets/458351d3-ccc7-4fa4-b49a-86a3492170e5" /> about AAS](https://www.perplexity.ai/search?q=I%20am%20looking%20at%20the%20repo%20https%3A%2F%2Fgithub.com%2FJacopoPan%2Faerial-autonomy-stack.%20Summarize%20what%20this%20code%20does,%20give%20me%20an%20assessment%20of%20the%20code%20quality%20and%20potential,%20and%20tell%20me%20how%20it%20can%20help%20me%20and%20my%20projects.); if you wish, please cite this work as:
+For an example bill of materials, read [`BOM.md`](/supplementary/BOM.md); for motivation, read [`RATIONALE.md`](/supplementary/RATIONALE.md); if you wish, cite this work as:
 
 ```bibtex
 @misc{panerati2026aas,
@@ -26,7 +26,7 @@ Also read [`RATIONALE.md`](/supplementary/RATIONALE.md) or [ask Perplexity <img 
 
 - **PX4 and ArduPilot multi-vehicle** simulation (**quadrotors and VTOLs**)
 - ROS2 action-based autopilot interface (*via* XRCE-DDS or MAVROS)
-- **YOLOv8** (with ONNX GPU Runtimes) and **LiDAR** Odometry (with [KISS-ICP](https://github.com/PRBonn/kiss-icp))
+- **YOLO** (with ONNX GPU Runtimes) and **LiDAR** Odometry (with [KISS-ICP](https://github.com/PRBonn/kiss-icp))
 - 3D worlds for perception-based simulation
 - **Steppable** [Gymnasium environment](https://gymnasium.farama.org/index.html) and **faster-than-real-time**, **multi-instance** simulation
 - Gazebo's wind effects plugin
@@ -132,77 +132,77 @@ aerial-autonomy-stack
 ├── aas-gym
 │   └── src
 │       └── aas_gym
-│           └── aas_env.py                          # aerial-autonomy-stack as a Gymnasium environment
+│           └── aas_env.py                            # aerial-autonomy-stack as a Gymnasium environment
 │
 ├── aircraft
 │   ├── aircraft_ws
 │   │   └── src
-│   │       ├── autopilot_interface                 # Ardupilot/PX4 high-level actions (Takeoff, Orbit, Offboard, Land)
-│   │       ├── mission                             # Orchestrator of the actions in `autopilot_interface` 
-│   │       ├── offboard_control                    # Low-level references for the Offboard action in `autopilot_interface` 
-│   │       ├── state_sharing                       # Publisher of the `/state_sharing_drone_N` topic broadcasted by Zenoh
-│   │       └── yolo_py                             # GStreamer video acquisition and publisher of YOLO bounding boxes
+│   │       ├── autopilot_interface                   # Ardupilot/PX4 high-level actions (Takeoff, Orbit, Offboard, Land)
+│   │       ├── mission                               # Orchestrator of the actions in `autopilot_interface`
+│   │       ├── offboard_control                      # Low-level references for the Offboard action in `autopilot_interface`
+│   │       ├── state_sharing                         # Publisher of the `/state_sharing_drone_N` topic broadcasted by Zenoh
+│   │       └── yolo_py                               # GStreamer video acquisition and publisher of YOLO bounding boxes
 │   │
-│   └── aircraft.yml.erb                            # Aircraft docker tmux entrypoint
+│   └── aircraft.yml.erb                              # Aircraft docker tmux entrypoint
 │
 ├── ground
 │   ├── ground_ws
 │   │   └── src
-│   │       └── ground_system                       # Publisher of topic `/tracks` broadcasted by Zenoh
+│   │       └── ground_system                         # Publisher of topic `/tracks` broadcasted by Zenoh
 │   │
-│   └── ground.yml.erb                              # Ground docker tmux entrypoint
+│   └── ground.yml.erb                                # Ground docker tmux entrypoint
 │
 ├── scripts
 │   ├── docker
-│   │   ├── Dockerfile.aircraft                     # Docker image for aircraft simulation and deployment
-│   │   ├── Dockerfile.ground                       # Docker image for ground system simulation and deployment
-│   │   └── Dockerfile.simulation                   # Docker image for SITL and HITL simulation
+│   │   ├── Dockerfile.aircraft                       # Docker image for aircraft simulation and deployment
+│   │   ├── Dockerfile.ground                         # Docker image for ground system simulation and deployment
+│   │   └── Dockerfile.simulation                     # Docker image for SITL and HITL simulation
 │   │
-│   ├── deploy_build.sh                             # Build `Dockerfile.aircraft` for arm64/Orin
-│   ├── deploy_run.sh                               # Start the aircraft docker on arm64/Orin or the ground docker on amd64 (deploy or HITL)
+│   ├── deploy_build.sh                               # Build `Dockerfile.aircraft` for arm64/Orin
+│   ├── deploy_run.sh                                 # Start the aircraft docker on arm64/Orin or the ground docker on amd64 (deploy or HITL)
 │   │
-│   ├── gym_run.py                                  # Examples for the Gymnasium aas-gym package
+│   ├── gym_run.py                                    # Examples for the Gymnasium aas-gym package
 │   │
-│   ├── sim_build.sh                                # Build all dockerfiles for amd64/simulation
-│   └── sim_run.sh                                  # Start the simulation (SITL or HITL)
+│   ├── sim_build.sh                                  # Build all dockerfiles for amd64/simulation
+│   └── sim_run.sh                                    # Start the simulation (SITL or HITL)
 │
 └── simulation
     ├── simulation_resources
     │   ├── aircraft_models
-    │   │   ├── alti_transition_quad                # ArduPilot VTOL model
-    │   │   ├── iris_with_ardupilot                 # ArduPilot quad model
-    │   │   ├── sensor_camera                       # Camera model
-    │   │   ├── sensor_lidar                        # LiDAR model
-    │   │   ├── standard_vtol                       # PX4 VTOL model
-    │   │   └── x500                                # PX4 quad model
+    │   │   ├── alti_transition_quad                  # ArduPilot VTOL model
+    │   │   ├── iris_with_ardupilot                   # ArduPilot quad model
+    │   │   ├── sensor_camera                         # Camera model
+    │   │   ├── sensor_lidar                          # LiDAR model
+    │   │   ├── standard_vtol                         # PX4 VTOL model
+    │   │   └── x500                                  # PX4 quad model
     │   └── simulation_worlds
     │       ├── apple_orchard.sdf
     │       ├── impalpable_greyness.sdf
     │       ├── shibuya_crossing.sdf
     │       └── swiss_town.sdf
     │
-    └── simulation.yml.erb                          # Simulation docker tmux entrypoint
+    └── simulation.yml.erb                            # Simulation docker tmux entrypoint
 ```
 </details>
 
 ## 1. Installation
 
-> AAS is tested on Ubuntu 22.04/24.04 with `nvidia-driver-580` using an i7-11 with 16GB RAM and RTX 3060
-> 
-> On Ubuntu, read [`REQUIREMENTS_UBUNTU.md`](/supplementary/REQUIREMENTS_UBUNTU.md) to setup the requirements (Docker Engine, `nvidia-ctk`)
->
-> On Windows 11, read [`REQUIREMENTS_WSL.md`](/supplementary/REQUIREMENTS_WSL.md) to setup the requirements (WSL, etc.)
-
 ```sh
-sudo apt update && sudo apt install -y git git-lfs xterm xfonts-base && git lfs install
+sudo apt update && sudo apt install -y git xterm xfonts-base wget unzip
 
 git clone https://github.com/JacopoPan/aerial-autonomy-stack.git
 cd aerial-autonomy-stack/scripts/
 
-./sim_build.sh
-# Note: the 1st build takes ~30GB of space and ~25' with good internet (`Ctrl + c` and restart if needed)
-# Alternatively, pre-build images are available on ghcr.io:
-# docker pull ghcr.io/jacopopan/[aircraft|ground|simulation]-image:latest
+./check_requirements.sh                               # If needed, refer to REQUIREMENTS_UBUNTU.md and REQUIREMENTS_WSL.md to install the requirements
+
+# Option A: local build
+./sim_build.sh                                        # The 1st build takes ~30GB and ~30' with good internet (`Ctrl + c` and restart if needed, cached stages will be preserved)
+
+# Option B: pull pre-built images
+for name in aircraft ground simulation; do
+  docker pull ghcr.io/jacopopan/${name}-image:latest
+  docker tag ghcr.io/jacopopan/${name}-image:latest ${name}-image:latest
+done
 ```
 
 <div align="right">
@@ -211,40 +211,52 @@ cd aerial-autonomy-stack/scripts/
   </a>
 </div>
 
+> [!NOTE]
+> AAS is tested on Ubuntu 22.04/24.04 with `nvidia-driver-580` using an i7-11 with 16GB RAM and RTX 3060
+>
+> Read [`REQUIREMENTS_UBUNTU.md`](/supplementary/REQUIREMENTS_UBUNTU.md) (or [`REQUIREMENTS_WSL.md`](/supplementary/REQUIREMENTS_WSL.md) for Windows 11) to install the requirements
+
 ## 2. Simulation
 
 ![workspace](https://github.com/user-attachments/assets/ad909fcc-69de-44ac-84b3-c5bc7a1c896f)
 
-> On a low-mid range laptop—i7-11 with 16GB RAM and RTX 3060—AAS can simulate a PX4 quad with YOLO and LiDAR at **10x real-time-factor** with flag `RTF=0.0`. Run multiple `sim_run.sh` in parallel adding flag `INSTANCE=1`, `INSTANCE=2`, etc. for even higher throughput.
-
 ```sh
-# 1. Start AAS
+# Start AAS
 cd aerial-autonomy-stack/scripts
-AUTOPILOT=px4 NUM_QUADS=1 NUM_VTOLS=1 WORLD=swiss_town RTF=3.0 ./sim_run.sh                   # Start a simulation, check the script for more options (note: ArduPilot SITL checks take ~40s before being ready to arm)
+AUTOPILOT=px4 NUM_QUADS=1 NUM_VTOLS=1 WORLD=swiss_town HEADLESS=false RTF=3.0 ./sim_run.sh    # Start a simulation, check the script for more options (note: ArduPilot SITL checks take ~30-40s of simulated time before being ready to arm)
+
+# Simulation options:
+# AUTOPILOT=px4, ardupilot
+# HEADLESS/CAMERA/LIDAR=true, false
+# NUM_QUADS/NUM_VTOLS=0, 1, ...
+# WORLD=impalpable_greyness, apple_orchard, shibuya_crossing, swiss_town
+# RTF=1.0, 2.0, ... (real-time-factor, use 0.0 for "as fast as possible)
+# INSTANCE=0, 1, ... (integer ID to run multiple parallel simulations)
 ```
 
-In any of the `QUAD` or `VTOL` Xterm terminals:
+In a new terminal:
 ```sh
-# 2. Fly
-ros2 run mission mission --ros-args -r __ns:=/Drone$DRONE_ID -p use_sim_time:=true            # This mission is defined in /aircraft/aircraft_resources/missions/test_mission.yaml
-```
-
-In the `Simulation`'s Xterm terminal:
-```sh
-# 3. Analyze
-/aas/simulation_resources/scripts/plot_logs.sh                                                # Analyze the flight logs at http://10.42.90.100:5006/browse or in MAVExplorer
-```
-
-Optionally, add or disable **wind effects**, in the `Simulation`'s Xterm terminal:
-
-```sh
-python3 /aas/simulation_resources/scripts/gz_wind.py --from_west 0.0 --from_south 3.0
-python3 /aas/simulation_resources/scripts/gz_wind.py --stop_wind
+# Fly all drones
+for ID in {1..2}; do
+  docker exec -d aircraft-container-inst0_$ID bash -c "source /opt/ros/humble/setup.bash &&
+    source /aas/github_ws/install/setup.bash && source /aas/aircraft_ws/install/setup.bash &&
+    ros2 run mission mission --conops yalla.yaml --ros-args -r __ns:=/Drone$ID -p use_sim_time:=true"
+done
 ```
 
 > [!TIP]
+> Edit [`sensor_config.yaml`](simulation/simulation_resources/aircraft_models/sensor_config.yaml) before running `sim_build.sh` to customize the sensor parameters
+>
 > <details>
-> <summary>Tip 1: use <b>ROS2 drone motion primitives</b> from CLI <i>(click to expand)</i></summary>
+> <summary>Add or disable <b>wind effects</b>, in the <kbd>Simulation</kbd>'s Xterm terminal <i>(click to expand)</i></summary>
+> 
+> ```sh
+> python3 /aas/simulation_resources/scripts/gz_wind.py --from_west 0.0 --from_south 3.0
+> python3 /aas/simulation_resources/scripts/gz_wind.py --stop_wind
+> ```
+> </details>
+> <details>
+> <summary>Use <b>ROS2 drone motion primitives</b> from CLI <i>(click to expand)</i></summary>
 >
 > ```sh
 > # Takeoff action (quads and VTOLs)
@@ -265,29 +277,15 @@ python3 /aas/simulation_resources/scripts/gz_wind.py --stop_wind
 > # SetSpeed service (always limited by the autopilot params, for quads applies from the next command, not effective on ArduPilot VTOLs) 
 > ros2 service call /Drone${DRONE_ID}/set_speed autopilot_interface_msgs/srv/SetSpeed '{speed: 3.0}'
 > ```
+> To analyze the flight logs in the `Simulation`'s Xterm terminal:
+> ```sh
+> /aas/simulation_resources/scripts/plot_logs.sh                                                # Analyze the flight logs at http://10.42.90.100:5006/browse or in MAVExplorer
+> ```
+>
 > To create a new mission, re-implement [`test_mission.yaml`](/aircraft/aircraft_resources/missions/test_mission.yaml)
 > </details>
 > <details>
-> <summary>Tip 2: use <b>Tmux shortcuts</b> to navigate windows and panes in Xterm <i>(click to expand)</i></summary>
->
-> ```sh
-> Ctrl + b, then n, p                   # Move between Tmux windows 
-> Ctrl + b, then [arrow keys]           # Move between Tmux panes in a window
-> Ctrl + [, then [arrow keys]           # Enter copy mode (to select and/or scroll back)
-> q                                     # Exit copy mode
-> Ctrl + b, then "                      # Split a Tmux window horizontally
-> Ctrl + b, then %                      # Split a Tmux window vertically
-> Ctrl + b, then d                      # Detach Tmux
-> ```
-> ```sh
-> tmux list-sessions                    # List all sessions
-> tmux attach-session -t [session_name] # Reattach a session
-> tmux kill-session -t [session_name]   # Kill a session
-> tmux kill-server                      # Kill all sessions
-> ```
-> </details>
-> <details>
-> <summary>Tip 3: <b>develop within running containers</b> <i>(click to expand)</i></summary>
+> <summary><b>Develop within running containers</b> <i>(click to expand)</i></summary>
 > 
 > Launching the `sim_run.sh` script with `DEV=true`, does **not** start the simulation and mounts folders `[aircraft|ground|simulation]_resources`, `[aircraft|ground]_ws/src` as volumes to more easily track, commit, push changes while building and testing them within the containers:
 > 
@@ -321,8 +319,30 @@ python3 /aas/simulation_resources/scripts/gz_wind.py --stop_wind
 > 
 > To end the simulation, in each terminal detach Tmux with `Ctrl + b`, then `d`; kill all lingering processes with `tmux kill-server && pkill -f gz`
 > </details>
+<!-- 
 > <details>
-> <summary>Tip 4: periodically run <b>Docker cleanups</b> <i>(click to expand)</i></summary>
+> <summary>Use <b>Tmux shortcuts</b> to navigate windows and panes in Xterm <i>(click to expand)</i></summary>
+>
+> ```sh
+> Ctrl + b, then n, p                   # Move between Tmux windows 
+> Ctrl + b, then [arrow keys]           # Move between Tmux panes in a window (or use the mouse)
+> Ctrl + [, then [arrow keys]           # Enter copy mode (to scroll back in a pane, or simply select-and-drag with the mouse to copy)
+> Space                                 # Start selecting when in copy mode (move with arrow keys)
+> y                                     # Yank/copy the selection to clipboard (paste with Ctrl + v or Ctrl + Shit + v)
+> q                                     # Exit copy mode
+> Ctrl + b, then "                      # Split a Tmux window horizontally
+> Ctrl + b, then %                      # Split a Tmux window vertically
+> Ctrl + b, then d                      # Detach Tmux
+> ```
+> ```sh
+> tmux list-sessions                    # List all sessions
+> tmux attach-session -t [session_name] # Reattach a session
+> tmux kill-session -t [session_name]   # Kill a session
+> tmux kill-server                      # Kill all sessions
+> ```
+> </details>
+> <details>
+> <summary>Periodically run <b>Docker cleanups</b> <i>(click to expand)</i></summary>
 >
 > ```sh
 > docker ps -a                          # List containers
@@ -333,15 +353,17 @@ python3 /aas/simulation_resources/scripts/gz_wind.py --stop_wind
 > docker network ls                     # List docker networks
 > docker network rm <network_name>      # Remove a specific network
 > docker network prune -f               # Remove all unused networks
+> docker system df                      # Check disk usage by images and cache
 > docker system prune                   # Remove stopped containers, unused networks and cache, dangling images
 > ```
 > ```sh
 > docker images                         # List images
 > docker image prune                    # Remove untagged images
 > docker rmi <image_name_or_id>         # Remove a specific image
-> docker builder prune                  # Clear the cache system-wide
+> docker builder prune                  # Clear all dangling cache
 > ```
 > </details>
+-->
 
 ![worlds](https://github.com/user-attachments/assets/b9f7635a-0b1f-4698-ba6a-70ab1b412aef)
 
@@ -386,8 +408,7 @@ python3 gym_run.py --mode vectorenv-speedup           # Vectorized speed-up test
 ```
 
 <!--
-
-TODO:
+WIP:
 python3 gym_run.py --mode learn                       # Train and test a PPO agent
 
 Debug with:
@@ -396,22 +417,17 @@ docker exec -it aircraft-container-inst0_1 tmux attach
 
 Clean up with:
 docker stop $(docker ps -q) && docker container prune -f && docker network prune -f
-
 -->
 
 ## 4. Jetson Deployment
 
-> AAS is tested on a [Holybro Jetson Baseboard](https://holybro.com/products/pixhawk-jetson-baseboard) with Pixhawk 6X and NVIDIA Orin NX 16GB on an [X650](https://holybro.com/collections/multicopter-kit/products/x650-development-kit)
-> 
-> Read [`SETUP_AVIONICS.md`](/supplementary/SETUP_AVIONICS.md) to setup the requirements on the Jetson and configure the Pixhawk
-
 ```sh
-sudo apt update && sudo apt install -y git git-lfs
+sudo apt update && sudo apt install -y git
 
 git clone https://github.com/JacopoPan/aerial-autonomy-stack.git
 cd aerial-autonomy-stack/scripts/
 
-./deploy_build.sh                                                                             # Build for arm64, on Jetson Orin NX the first build takes ~1h, mostly to build onnxruntime-gpu with TensorRT support from source
+./deploy_build.sh                                     # Build for arm64, on Jetson Orin NX the first build takes ~50', including building onnxruntime-gpu with TensorRT support from source
 ```
 
 <div align="right">
@@ -420,12 +436,23 @@ cd aerial-autonomy-stack/scripts/
   </a>
 </div>
 
-Finally, start the `aircraft-image` on Jetson Orin NX
+>[!NOTE]
+> AAS is tested on a [Holybro Jetson Baseboard](https://holybro.com/products/pixhawk-jetson-baseboard) with Pixhawk 6X and NVIDIA Orin NX 16GB on an [X650](/supplementary/BOM.md)
+>
+> Read [`SETUP_AVIONICS.md`](/supplementary/SETUP_AVIONICS.md) to setup the requirements on the Jetson and configure the Pixhawk
+
+Start the `aircraft-image` on Jetson Orin NX:
 
 ```sh
 cd aerial-autonomy-stack/scripts/
-DRONE_TYPE=quad AUTOPILOT=px4 DRONE_ID=1 CAMERA=true LIDAR=false HEADLESS=true ./deploy_run.sh
-# Note: the 1st run of `./deploy_run.sh` requires ~10' to build the FP16 TensorRT cache
+AUTOPILOT=px4 DRONE_ID=1 CAMERA=true LIDAR=false AIR_SUBNET=10.223 HEADLESS=true ./deploy_run.sh
+# The 1st run of `./deploy_run.sh` requires ~10' to build the FP16 TensorRT cache
+
+# Deployment options:
+# DRONE_TYPE=quad, vtol
+# AUTOPILOT=px4, ardupilot
+# DRONE_ID=1, 2, ... (ROS_DOMAIN_ID of the drone, matching the MAV_SYS_ID/SYSID_THISMAV of the autpilot)
+# HEADLESS/CAMERA/LIDAR=true, false
 ```
 
 <details>
@@ -465,10 +492,10 @@ HITL=true NUM_QUADS=2 SIM_SUBNET=172.30 AIR_SUBNET=10.223 ./sim_run.sh
 Finally, start QGC and the Zenoh bridge:
 ```sh
 # On the computer with IPs ending in 90.101
-HITL=true GROUND=true HEADLESS=false NUM_QUADS=2 SIM_SUBNET=172.30 AIR_SUBNET=10.223 ./deploy_run.sh
+HITL=true GROUND=true HEADLESS=false NUM_QUADS=2 ./deploy_run.sh
 ```
 
-> **Note:** running only the first 3 commands with `GND_CONTAINER=false` puts the Zenoh bridge to the `SIM_SUBNET`, removing the need for the optional `AIR_SUBNET` and the computer with IP ending in `90.101`
+> **Note:** running only the first 3 commands with `GND_CONTAINER=false` puts the Zenoh bridge on the `SIM_SUBNET`, removing the need for the optional `AIR_SUBNET` and the computer with IP ending in `90.101`
 
 Once done, detach Tmux (and remove the containers) with `Ctrl + b`, then `d`
 
@@ -477,7 +504,11 @@ Once done, detach Tmux (and remove the containers) with `Ctrl + b`, then `d`
 ---
 > You've done a man's job, sir. I guess you're through, huh?
 
-<!-- 
+<!--
+
+## License
+
+Distributed under the MIT License. See `LICENSE.txt` for more information. Copyright (c) 2025 Jacopo Panerati
 
 ## Known Issues
 
@@ -489,9 +520,5 @@ Once done, detach Tmux (and remove the containers) with `Ctrl + b`, then `d`
 - In ArdupilotInterface's action callbacks, std::shared_lock<std::shared_mutex> lock(node_data_mutex_); could be used on the reads of lat_, lon_, alt_
 - QGC does not save roll and pitch in the telemetry bar for PX4 VTOLs (MAV_TYPE 22)
 - PX4 quad max tilt is limited by the anti-windup gain (zero it to deactivate it): const float arw_gain = 2.f / _gain_vel_p(0);
-
-## License 
-
-Distributed under the MIT License. See `LICENSE.txt` for more information. Copyright (c) 2025 Jacopo Panerati
 
 -->

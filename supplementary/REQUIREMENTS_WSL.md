@@ -48,6 +48,11 @@ free -h                                               # (optional) Check the mem
 > free -h                           # Check the available memory and swap reflect .wslconfig
 > ```
 
+---
+
+> [!TIP]
+> Run [`check_requirements.sh`](/scripts/check_requirements.sh) **inside WSL** to verify whether you need to follow the steps below
+
 ## Install the NVIDIA Driver on Windows 11
 
 Download and install the **NVIDIA driver 580 on Windows** using the [NVIDIA App](https://www.nvidia.com/en-us/software/nvidia-app/) 
@@ -130,7 +135,7 @@ sudo systemctl restart docker
 
 docker info | grep -i runtime       # Check the `nvidia` runtime is available
 
-docker run --rm --gpus all nvcr.io/nvidia/cuda:12.2.0-base-ubuntu22.04 nvidia-smi        # Test nvidia-smi works in a container with CUDA
+docker run --rm --gpus all nvcr.io/nvidia/cuda:12.8.1-cudnn-runtime-ubuntu22.04 nvidia-smi # Test nvidia-smi works in a container with CUDA
 ```
 
 ## Troubleshoot

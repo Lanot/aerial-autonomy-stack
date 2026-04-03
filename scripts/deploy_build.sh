@@ -8,10 +8,12 @@ set -e
 # Find the script's path
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 
+BUILD_ARGS=""
 if [ "${CLEAN_BUILD:-false}" = "true" ]; then
   rm -rf "${SCRIPT_DIR}/../github_clones"
+  BUILD_ARGS="--no-cache" # If CLEAN_BUILD is "true", rebuild everything from scratch
   docker rmi aircraft-image:latest || true
-  docker builder prune -f # If CLEAN_BUILD is "true", rebuild everything from scratch
+  docker builder prune -f # Remove all dangling build cache to free up space
 fi
 
 BUILD_DOCKER=true
@@ -27,7 +29,7 @@ REPOS=( # Format: "URL;BRANCH;LOCAL_DIR_NAME"
   # Aircraft image
   "https://github.com/PX4/px4_msgs.git;release/1.16;px4_msgs"
   "https://github.com/eProsima/Micro-XRCE-DDS-Agent.git;master;Micro-XRCE-DDS-Agent"
-  "https://github.com/microsoft/onnxruntime.git;v1.22.1;onnxruntime" # Only for the deployment build
+  "https://github.com/microsoft/onnxruntime.git;v1.23.2;onnxruntime" # Only for the deployment build
   "https://github.com/Livox-SDK/Livox-SDK2.git;master;Livox-SDK2" # Only for the deployment build
   "https://github.com/Livox-SDK/livox_ros_driver2.git;master;livox_ros_driver2" # Only for the deployment build
   "https://github.com/PRBonn/kiss-icp.git;main;kiss-icp"
@@ -42,6 +44,7 @@ for repo_info in "${REPOS[@]}"; do
     TAGS=$(git tag --points-at HEAD)
     echo "There is a clone of ${dir} on branch: ${BRANCH}, tags: [${TAGS}]"
     # The script does not automatically pull changes for already cloned repos (as they should be on fixed tags)
+    # This avoids breaking the Docker cache but it requires manually deleting the github_clones folder for branch/tag updates
     # git pull
     # git submodule update --init --recursive --depth 1
     cd "$CLONE_DIR"
@@ -54,12 +57,8 @@ for repo_info in "${REPOS[@]}"; do
 done
 
 if [ "$BUILD_DOCKER" = "true" ]; then
-  # Make sure AAS's Git LFS simulation resources are pulled (although not strictly necessary for deployment)
-  git lfs install
-  git lfs pull
-
   # The first build takes ~1h (mostly to build onnxruntime-gpu from source) and creates an 18GB image
-  docker build -t aircraft-image -f "${SCRIPT_DIR}/docker/Dockerfile.aircraft" "${SCRIPT_DIR}/.."
+  docker build $BUILD_ARGS -t aircraft-image -f "${SCRIPT_DIR}/docker/Dockerfile.aircraft" "${SCRIPT_DIR}/.."
 else
   echo -e "Skipping Docker build"
 fi

@@ -2,6 +2,9 @@
 
 > These instructions are tested using Ubuntu 22.04.5 LTS and Ubuntu 24.04.3 LTS
 
+> [!TIP]
+> Run [`check_requirements.sh`](/scripts/check_requirements.sh) to verify whether you need to follow the steps below
+
 ## Install Ubuntu with NVIDIA Driver
 
 - Get/install an OS from a startup disk based on Ubuntu 22 or newer (e.g. `ubuntu-22.04.5-desktop-amd64.iso`)
@@ -81,7 +84,7 @@ sudo systemctl restart docker
 
 docker info | grep -i runtime       # Check the `nvidia` runtime is available
 
-docker run --rm --gpus all nvcr.io/nvidia/cuda:12.2.0-base-ubuntu22.04 nvidia-smi        # Test nvidia-smi works in a container with CUDA
+docker run --rm --gpus all nvcr.io/nvidia/cuda:12.8.1-cudnn-runtime-ubuntu22.04 nvidia-smi # Test nvidia-smi works in a container with CUDA
 ```
 
 ## Optimize Memory Usage

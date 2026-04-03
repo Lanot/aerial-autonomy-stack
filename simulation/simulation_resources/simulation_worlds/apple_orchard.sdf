@@ -314,7 +314,7 @@
       <model name="ground_plane">
         <static>true</static>
         <link name="link">
-          <!-- <collision name="collision">
+          <collision name="collision">
             <geometry>
               <mesh>
                 <scale>.007 .007 .007</scale>
@@ -328,7 +328,7 @@
               <bounce/>
               <contact/>
             </surface>
-          </collision> -->
+          </collision>
           <visual name="visual">
             <geometry>
               <mesh>
@@ -470,6 +470,27 @@
       <include>
         <uri>model://gazebo</uri>
         <pose degrees="true">-5 -3 1.15 0 0 0</pose>
+        <static>true</static>
+      </include>
+
+      <include>
+        <uri>model://person_standing</uri>
+        <name>person_1</name>
+        <pose degrees="true">10 -3 -0.35 0 0 210</pose>
+        <static>true</static>
+      </include>
+
+      <include>
+        <uri>model://person_standing</uri>
+        <name>person_2</name>
+        <pose degrees="true">12 -1 -0.35 0 0 180</pose>
+        <static>true</static>
+      </include>
+
+      <include>
+        <uri>model://person_standing</uri>
+        <name>person_3</name>
+        <pose degrees="true">-5 -0.5 -0.1 0 0 180</pose>
         <static>true</static>
       </include>
 
