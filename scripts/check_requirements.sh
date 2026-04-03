@@ -25,6 +25,8 @@ if command -v nvidia-smi &> /dev/null; then
     DRIVER_MAJOR=${DRIVER_VER%%.*}
     if [ "$DRIVER_MAJOR" -eq 580 ] || [ "$DRIVER_MAJOR" -eq 581 ]; then
         echo "[PASS] NVIDIA Driver: tested with AAS (version: $DRIVER_VER)"
+    elif [ "$DRIVER_MAJOR" -ge 590 ]; then
+        echo "[FAIL] NVIDIA Driver: version $DRIVER_VER does not support AAS GStreamer pipelines; please downgrade to 580."
     else
         echo "[WARN] NVIDIA Driver: available but not tested with AAS (version: $DRIVER_VER; recommended: 580)"
     fi

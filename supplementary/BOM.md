@@ -103,13 +103,15 @@ flowchart TB
 
 ## Holybro X650 Parameters
 
-Autopilot parameters specific to the Holybro X650 kit
+Autopilot parameters for the Holybro X650 kit
 
+<!--
 ### PX4 Configuration
 
 ```sh
 TODO
 ```
+-->
 
 ### ArduPilot Configuration
 

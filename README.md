@@ -30,7 +30,7 @@ For an example bill of materials, read [`BOM.md`](/supplementary/BOM.md); for mo
 - 3D worlds for perception-based simulation
 - **Steppable** [Gymnasium environment](https://gymnasium.farama.org/index.html) and **faster-than-real-time**, **multi-instance** simulation
 - Gazebo's wind effects plugin
-- **Dockerized simulation** based on [`nvcr.io/nvidia/cuda:12.8.1-cudnn-runtime-ubuntu22.04`](https://catalog.ngc.nvidia.com/orgs/nvidia/containers/cuda/tags)
+- **Dockerized simulation** based on [`nvcr.io/nvidia/cuda:13.2.0-cudnn-runtime-ubuntu22.04`](https://catalog.ngc.nvidia.com/orgs/nvidia/containers/cuda/tags)
 - **Dockerized deployment** based on [`nvcr.io/nvidia/l4t-jetpack:r36.4.0`](https://catalog.ngc.nvidia.com/orgs/nvidia/containers/l4t-jetpack/tags)
 - **Windows 11** compatibility *via* WSL
 - Multi-**Jetson-in-the-loop (HITL) simulation** to test NVIDIA- and ARM-based on-board compute
@@ -124,7 +124,7 @@ flowchart TB
 ```
 
 <details>
-<summary>Repository Structure <i>(click to expand)</i></summary>
+<summary>Repository structure <i>(click to expand)</i></summary>
 
 ```sh
 aerial-autonomy-stack
@@ -185,6 +185,29 @@ aerial-autonomy-stack
 ```
 </details>
 
+
+<details>
+<summary>Dependency management <i>(click to expand)</i></summary>
+
+- [x] Host OS: [Ubuntu 24.04/22.04 (LTS, ESM 4/2034)](https://ubuntu.com/about/release-cycle)
+- [ ] Jetpack: [6.2.1 (rev. 1) [L4T 36.4.4, Ubuntu 22-based]](https://developer.nvidia.com/embedded/jetpack-archive)
+    - **TODO: update to JP 6.2.2 [L4T 36.5.0, Ubuntu 22-based], latest (last?) JP supported on Orin Series**
+- [x] [`nvidia-driver-580`](https://developer.nvidia.com/datacenter-driver-archive)
+    - **NOTE: `nvidia-driver-590` [deprecates Ubuntu 22's GStreamer 1.20 presets](https://docs.nvidia.com/video-technologies/video-codec-sdk/13.0/deprecation-notices/index.html) and cannot be used without updating the `amd64` images to Ubuntu 24 or compiling `gst 1.24` from source on the Ubuntu 22 images**
+    - **AAS sticks with `nvidia-driver-580` and Ubuntu 22 `amd64` images for parity with the L4T 36.x, Ubuntu 22-based `arm64` images**
+- [x] [Docker Engine v29](https://docs.docker.com/engine/release-notes/)
+- [x] [NVIDIA Container Toolkit 1.19](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/index.html)
+- [x] `amd64` base image: [`cuda:13.2.0-cudnn-runtime-ubuntu22.04`](https://catalog.ngc.nvidia.com/orgs/nvidia/containers/cuda/tags)
+- [x] `arm64`/Jetson base image: [`l4t-jetpack:r36.4.0`](https://catalog.ngc.nvidia.com/orgs/nvidia/containers/l4t-jetpack/tags)
+- [x] [ROS2 Humble (LTS, EOL 5/2027)](https://docs.ros.org/en/rolling/Releases.html)
+- [x] [Gazebo Sim Harmonic (LTS, EOL 9/2028)](https://gazebosim.org/docs/latest/releases/)
+- [x] [PX4 1.16.1](https://github.com/PX4/PX4-Autopilot/releases)
+- [x] [ArduPilot 4.6.3](https://github.com/ArduPilot/ardupilot/releases)
+- [x] [YOLO26](https://github.com/ultralytics/ultralytics/releases)
+- [x] [ONNX Runtime 1.23.2](https://github.com/microsoft/onnxruntime/releases)
+    - **NOTE: updating to 1.24 from wheel requires switching to Python 3.11**
+</details>
+
 ## 1. Installation
 
 ```sh
@@ -212,7 +235,7 @@ done
 </div>
 
 > [!NOTE]
-> AAS is tested on Ubuntu 22.04/24.04 with `nvidia-driver-580` using an i7-11 with 16GB RAM and RTX 3060
+> AAS is tested on Ubuntu 24.04/22.04 with `nvidia-driver-580` using an i7-11 with 16GB RAM and RTX 3060
 >
 > Read [`REQUIREMENTS_UBUNTU.md`](/supplementary/REQUIREMENTS_UBUNTU.md) (or [`REQUIREMENTS_WSL.md`](/supplementary/REQUIREMENTS_WSL.md) for Windows 11) to install the requirements
 
@@ -520,5 +543,32 @@ Distributed under the MIT License. See `LICENSE.txt` for more information. Copyr
 - In ArdupilotInterface's action callbacks, std::shared_lock<std::shared_mutex> lock(node_data_mutex_); could be used on the reads of lat_, lon_, alt_
 - QGC does not save roll and pitch in the telemetry bar for PX4 VTOLs (MAV_TYPE 22)
 - PX4 quad max tilt is limited by the anti-windup gain (zero it to deactivate it): const float arw_gain = 2.f / _gain_vel_p(0);
+
+## Future Work
+
+### Feature: Betaflight SITL
+
+> Implement a C++ gz-transport/UDP bridge between Gazebo Sim and Betaflight SITL
+
+- https://www.betaflight.com/docs/development/SITL
+- https://github.com/Aeroloop/betaloop
+- https://github.com/utiasDSL/gym-pybullet-drones/blob/a8c238c21c7586ee1735bafb358a4d5637402f14/gym_pybullet_drones/envs/BetaAviary.py#L111C1-L172C56
+
+### More Out-there Ideas
+
+> Potential for technical spikes/long-term, nice-to-have features
+
+- Integrate a GIS world generator (e.g., Cesium)
+    - https://github.com/CesiumGS/cesium-native
+- Integrate a photorealistic simulator (e.g., IsaacSim)
+    - https://github.com/PegasusSimulator/PegasusSimulator
+- Integrate more realistic flight dynamics (e.g., JSBSim)
+    - https://github.com/JSBSim-Team/jsbsim
+- Integrate a VLA model bridging the `yolo_py` and `mission` packages
+- Re-instate Gazebo Sim support for Pixhawk HITL simulation using MAVLink HIL_ interface
+    - https://mavlink.io/en/messages/common.html
+    - https://github.com/tiiuae/px4-gzsim-plugins/
+    - https://docs.px4.io/main/en/simulation/hitl
+    - https://ardupilot.org/dev/docs/hitl-simulators.html
 
 -->
