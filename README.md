@@ -30,8 +30,8 @@ For an example bill of materials, read [`BOM.md`](/supplementary/BOM.md); for mo
 - 3D worlds for perception-based simulation
 - **Steppable** [Gymnasium environment](https://gymnasium.farama.org/index.html) and **faster-than-real-time**, **multi-instance** simulation
 - Gazebo's wind effects plugin
-- **Dockerized simulation** based on [`nvcr.io/nvidia/cuda:12.9.1-cudnn-runtime-ubuntu22.04`](https://catalog.ngc.nvidia.com/orgs/nvidia/containers/cuda/tags)
-- **Dockerized deployment** based on [`nvcr.io/nvidia/l4t-jetpack:r36.4.0`](https://catalog.ngc.nvidia.com/orgs/nvidia/containers/l4t-jetpack/tags)
+- **Dockerized simulation** based on [Ubuntu with CUDA and cuDNN](https://catalog.ngc.nvidia.com/orgs/nvidia/containers/cuda/tags)
+- **Dockerized deployment** based on [NVIDIA JetPack](https://catalog.ngc.nvidia.com/orgs/nvidia/containers/l4t-jetpack/tags)
 - **Windows 11** compatibility *via* WSL
 - Multi-**Jetson-in-the-loop (HITL) simulation** to test NVIDIA- and ARM-based on-board compute
 - Dual network to separate simulated sensors (`SIM_SUBNET`) and inter-vehicle comms (`AIR_SUBNET`)
