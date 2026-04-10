@@ -222,7 +222,7 @@ cd aerial-autonomy-stack/scripts/
 # Option A: local build
 ./sim_build.sh                                        # The 1st build takes ~30GB and ~30' with good internet (`Ctrl + c` and restart if needed, cached stages will be preserved)
 
-# Option B: pull pre-built images
+# Option B: pull pre-built images (updated every Friday night)
 for name in aircraft ground simulation; do
   docker pull ghcr.io/jacopopan/${name}-image:latest
   docker tag ghcr.io/jacopopan/${name}-image:latest ${name}-image:latest
