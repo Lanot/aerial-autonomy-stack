@@ -45,7 +45,7 @@ class YoloInferenceNode(Node):
         
         # Create publishers
         self.detection_publisher = self.create_publisher(Detection2DArray, 'detections', 10)
-        # self.image_publisher = self.create_publisher(Image, 'detections_image', 10)
+        # self.image_publisher = self.create_publisher(Image, 'raw_frames', 10)
         self.bridge = CvBridge()
 
         # Pre-allocate reusable arrays for scaling to avoid allocation in hot loops
@@ -201,6 +201,10 @@ class YoloInferenceNode(Node):
             except queue.Empty:
                 self.get_logger().info("Frame queue is empty, is the stream running?")
                 continue
+
+            # Publish raw frames in ROS
+            # if not self.headless:
+            #     self.image_publisher.publish(self.bridge.cv2_to_imgmsg(frame, "bgr8"))
             
             # Inference
             with Profiler("do_yolo (includes ONNX Runtime)"):
@@ -364,9 +368,6 @@ class YoloInferenceNode(Node):
             detection_array.detections.append(detection)
 
         self.detection_publisher.publish(detection_array)
-        
-        # if not self.headless: # TODO: requires to add frame to arguments of publish_detections
-        #     self.image_publisher.publish(self.bridge.cv2_to_imgmsg(frame, "bgr8"))
 
     def visualize(self, frame, boxes, confidences, class_ids):
         for i in range(len(boxes)):
