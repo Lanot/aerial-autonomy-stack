@@ -67,7 +67,7 @@ class AASEnv(gym.Env):
         # self.GROUND_ID = "101" # Unused
         #
         self.GND_CONTAINER = False # Do NOT use the ground-image to run Zenoh (nor QGC)
-        self.RTF = 15.0 # Note: RTFs > 10 can destabilize PX4/ArduPilot SITL
+        self.RTF = 0.0 # As fast as possible (capped to 15x in the simulation.yml.erb)
         self.START_AS_PAUSED = True # Start the simulation paused and manually step with gz-sim WorldControl
         self.INSTANCE = instance
         #
@@ -264,7 +264,7 @@ class AASEnv(gym.Env):
         # ZeroMQ setup
         self.zmq_context = zmq.Context()
         self.socket = self.zmq_context.socket(zmq.REQ)
-        self.ZMQ_TRANSPORT = "tcp" # "tcp" or "ipc", also uncomment the corresponding block in zero_bridge.cpp
+        self.ZMQ_TRANSPORT = "ipc" # "tcp" or "ipc", also uncomment the corresponding block in zeromq_bridge.cpp
         if self.ZMQ_TRANSPORT == "tcp":
             self.ZMQ_PORT = 5555
             self.ZMQ_IP = f"{self.SIM_SUBNET}.90.{self.SIM_ID}"

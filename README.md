@@ -30,8 +30,8 @@ For an example bill of materials, read [`BOM.md`](/supplementary/BOM.md); for mo
 - 3D worlds for perception-based simulation
 - **Steppable** [Gymnasium environment](https://gymnasium.farama.org/index.html) and **faster-than-real-time**, **multi-instance** simulation
 - Gazebo's wind effects plugin
-- **Dockerized simulation** based on [`nvcr.io/nvidia/cuda:12.8.1-cudnn-runtime-ubuntu22.04`](https://catalog.ngc.nvidia.com/orgs/nvidia/containers/cuda/tags)
-- **Dockerized deployment** based on [`nvcr.io/nvidia/l4t-jetpack:r36.4.0`](https://catalog.ngc.nvidia.com/orgs/nvidia/containers/l4t-jetpack/tags)
+- **Dockerized simulation** based on [Ubuntu with CUDA and cuDNN](https://catalog.ngc.nvidia.com/orgs/nvidia/containers/cuda/tags)
+- **Dockerized deployment** based on [NVIDIA JetPack](https://catalog.ngc.nvidia.com/orgs/nvidia/containers/l4t-jetpack/tags)
 - **Windows 11** compatibility *via* WSL
 - Multi-**Jetson-in-the-loop (HITL) simulation** to test NVIDIA- and ARM-based on-board compute
 - Dual network to separate simulated sensors (`SIM_SUBNET`) and inter-vehicle comms (`AIR_SUBNET`)
@@ -124,7 +124,7 @@ flowchart TB
 ```
 
 <details>
-<summary>Repository Structure <i>(click to expand)</i></summary>
+<summary>Repository structure <i>(click to expand)</i></summary>
 
 ```sh
 aerial-autonomy-stack
@@ -185,6 +185,30 @@ aerial-autonomy-stack
 ```
 </details>
 
+
+<details>
+<summary>Dependency management <i>(click to expand)</i></summary>
+
+- [x] Host OS: [Ubuntu 24.04/22.04 (LTS, ESM 4/2034)](https://ubuntu.com/about/release-cycle)
+- [ ] Jetpack: [6.2.1 (rev. 1) [L4T 36.4.4, Ubuntu 22-based]](https://developer.nvidia.com/embedded/jetpack-archive)
+    - **TODO: test on JP 6.2.2 [L4T 36.5.0, Ubuntu 22-based], latest (last?) JP supported on Orin Series**
+- [x] [`nvidia-driver-580`](https://developer.nvidia.com/datacenter-driver-archive)
+    - **NOTE: `nvidia-driver-590` does not support the [presets in Ubuntu 22's GStreamer 1.20](https://docs.nvidia.com/video-technologies/video-codec-sdk/13.0/deprecation-notices/index.html) and it requires updating the `amd64` base images to Ubuntu 24 or compiling [GStreamer 1.24](https://discourse.gstreamer.org/t/nvcodec-nvenc-nvidia-deprecates-support-for-old-videocodec-sdk-h-264-hevc-encoder-presets-with-driver-r550-in-q124/182) from source**
+    - **AAS sticks with `nvidia-driver-580` and Ubuntu 22 `amd64` base images for parity with the L4T 36.x, Ubuntu 22-based `arm64` base image**
+- [x] [Docker Engine v29](https://docs.docker.com/engine/release-notes/)
+- [x] [NVIDIA Container Toolkit 1.19](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/index.html)
+- [x] `amd64` base image: [`cuda:12.9.1-cudnn-runtime-ubuntu22.04`](https://catalog.ngc.nvidia.com/orgs/nvidia/containers/cuda/tags)
+    - **NOTE: `onnxruntime-gpu` 1.23 does not support CUDA 13**
+- [x] `arm64`/Jetson base image: [`l4t-jetpack:r36.4.0`](https://catalog.ngc.nvidia.com/orgs/nvidia/containers/l4t-jetpack/tags)
+- [x] [ROS2 Humble (LTS, EOL 5/2027)](https://docs.ros.org/en/rolling/Releases.html)
+- [x] [Gazebo Sim Harmonic (LTS, EOL 9/2028)](https://gazebosim.org/docs/latest/releases/)
+- [x] [PX4 1.16.1](https://github.com/PX4/PX4-Autopilot/releases)
+- [x] [ArduPilot 4.6.3](https://github.com/ArduPilot/ardupilot/releases)
+- [x] [YOLO26](https://github.com/ultralytics/ultralytics/releases)
+- [x] [ONNX Runtime 1.23.2](https://github.com/microsoft/onnxruntime/releases)
+    - **NOTE: updating to 1.24 from wheel requires switching to Python >3.11/Ubuntu 24**
+</details>
+
 ## 1. Installation
 
 ```sh
@@ -198,7 +222,7 @@ cd aerial-autonomy-stack/scripts/
 # Option A: local build
 ./sim_build.sh                                        # The 1st build takes ~30GB and ~30' with good internet (`Ctrl + c` and restart if needed, cached stages will be preserved)
 
-# Option B: pull pre-built images
+# Option B: pull pre-built images (updated every Friday night)
 for name in aircraft ground simulation; do
   docker pull ghcr.io/jacopopan/${name}-image:latest
   docker tag ghcr.io/jacopopan/${name}-image:latest ${name}-image:latest
@@ -212,7 +236,7 @@ done
 </div>
 
 > [!NOTE]
-> AAS is tested on Ubuntu 22.04/24.04 with `nvidia-driver-580` using an i7-11 with 16GB RAM and RTX 3060
+> AAS is tested on Ubuntu 24.04/22.04 with `nvidia-driver-580` using an i7-11 with 16GB RAM and RTX 3060
 >
 > Read [`REQUIREMENTS_UBUNTU.md`](/supplementary/REQUIREMENTS_UBUNTU.md) (or [`REQUIREMENTS_WSL.md`](/supplementary/REQUIREMENTS_WSL.md) for Windows 11) to install the requirements
 
@@ -245,7 +269,7 @@ done
 ```
 
 > [!TIP]
-> Edit [`sensor_config.yaml`](simulation/simulation_resources/aircraft_models/sensor_config.yaml) before running `sim_build.sh` to customize the sensor parameters
+> Edit [`sensor_config.yaml`](simulation/simulation_resources/aircraft_models/sensor_config.yaml), then run `sim_build.sh` to customize the sensor parameters
 >
 > <details>
 > <summary>Add or disable <b>wind effects</b>, in the <kbd>Simulation</kbd>'s Xterm terminal <i>(click to expand)</i></summary>
@@ -373,53 +397,7 @@ done
 > / *(iii)* `shibuya_crossing`, a 3D world adapted from [cgtrader](https://www.cgtrader.com/)
 > / *(iv)* `swiss_town`, a photogrammetry world courtesy of [Pix4D / pix4d.com](https://support.pix4d.com/hc/en-us/articles/360000235126)
 
-## 3. Gymnasium Environment
-
-<details>
-<summary>Using a Python <kbd>venv</kbd> or a <a href="https://docs.conda.io/projects/conda/en/stable/user-guide/install/linux.html"><kbd>conda</kbd></a> environment is optional but recommended <i>(click to expand)</i></summary>
-
-```sh
-wget https://repo.anaconda.com/archive/Anaconda3-2025.06-0-Linux-x86_64.sh # Or a newer version in https://repo.anaconda.com/archive/
-bash Anaconda3-2025.06-0-Linux-x86_64.sh
-conda create -n aas python=3.13
-```
-</details>
-
-Install the `aas-gym` package (**after** completing the steps in ["Installation"](#1-installation)):
-```sh
-conda activate aas                                    # If using Anaconda
-cd aerial-autonomy-stack/aas-gym/
-pip3 install -e .
-```
-
-<div align="right">
-  <a href="https://github.com/JacopoPan/aerial-autonomy-stack/actions/workflows/aas-gym-pip-install.yml">
-    <img src="https://github.com/JacopoPan/aerial-autonomy-stack/actions/workflows/aas-gym-pip-install.yml/badge.svg" alt="aas-gym pip install">
-  </a>
-</div>
-
-Use with:
-```sh
-conda activate aas                                    # If using Anaconda
-cd aerial-autonomy-stack/scripts
-python3 gym_run.py --mode step                        # Manually step AAS @1Hz
-python3 gym_run.py --mode speedup                     # Speed-up test @50Hz (10x RTF)
-python3 gym_run.py --mode vectorenv-speedup           # Vectorized speed-up test @50Hz (>20x RTF)
-```
-
-<!--
-WIP:
-python3 gym_run.py --mode learn                       # Train and test a PPO agent
-
-Debug with:
-docker exec -it simulation-container-inst0 tmux attach
-docker exec -it aircraft-container-inst0_1 tmux attach
-
-Clean up with:
-docker stop $(docker ps -q) && docker container prune -f && docker network prune -f
--->
-
-## 4. Jetson Deployment
+## 3. Jetson Deployment
 
 ```sh
 sudo apt update && sudo apt install -y git
@@ -437,9 +415,9 @@ cd aerial-autonomy-stack/scripts/
 </div>
 
 >[!NOTE]
-> AAS is tested on a [Holybro Jetson Baseboard](https://holybro.com/products/pixhawk-jetson-baseboard) with Pixhawk 6X and NVIDIA Orin NX 16GB on an [X650](/supplementary/BOM.md)
+> AAS is tested on a [Holybro Jetson Baseboard](https://holybro.com/products/pixhawk-jetson-baseboard) with Pixhawk 6X and NVIDIA Orin NX 16GB on an X650
 >
-> Read [`SETUP_AVIONICS.md`](/supplementary/SETUP_AVIONICS.md) to setup the requirements on the Jetson and configure the Pixhawk
+> Read [`SETUP_AVIONICS.md`](/supplementary/SETUP_AVIONICS.md) and [`BOM.md`](/supplementary/BOM.md) to setup the requirements on the Jetson and configure the Pixhawk
 
 Start the `aircraft-image` on Jetson Orin NX:
 
@@ -498,8 +476,67 @@ HITL=true GROUND=true HEADLESS=false NUM_QUADS=2 ./deploy_run.sh
 > **Note:** running only the first 3 commands with `GND_CONTAINER=false` puts the Zenoh bridge on the `SIM_SUBNET`, removing the need for the optional `AIR_SUBNET` and the computer with IP ending in `90.101`
 
 Once done, detach Tmux (and remove the containers) with `Ctrl + b`, then `d`
-
 </details>
+
+## 4. Gymnasium Environment
+
+<details>
+<summary>Using a Python <kbd>venv</kbd> or a <a href="https://docs.conda.io/projects/conda/en/stable/user-guide/install/linux.html"><kbd>conda</kbd></a> environment is optional but recommended <i>(click to expand)</i></summary>
+
+```sh
+wget https://repo.anaconda.com/archive/Anaconda3-2025.12-2-Linux-x86_64.sh # Or a newer version in https://repo.anaconda.com/archive/
+bash Anaconda3-2025.12-2-Linux-x86_64.sh              # Install; start a new terminal
+conda config --set auto_activate_base false           # Turn off auto initialization of (base); start a new terminal
+conda update --all -n base -c defaults                # Update to the latest conda version
+conda create -n aas python=3.12                       # Latest Python version beyond "bugfix" status https://devguide.python.org/versions/
+```
+
+**Optionally**, force CPU/GPU performance modes
+```sh
+sudo cpupower frequency-set -g performance            # Force CPU performance mode
+cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor # Check (does NOT persist across reboots)
+
+sudo prime-select nvidia                              # Force GPU use instead of on-demand
+prime-select query                                    # Check (persists across reboots)
+
+sudo nvidia-smi -pm 1                                 # Prevent NVIDIA driver from going idle
+nvidia-smi --query-gpu=persistence_mode --format=csv,noheader # Check (does NOT persist across reboots)
+```
+</details>
+
+Install the `aas-gym` package (**after** completing the steps in ["Installation"](#1-installation)):
+```sh
+conda activate aas                                    # If using Anaconda
+cd aerial-autonomy-stack/aas-gym/
+pip3 install -e .
+```
+
+<div align="right">
+  <a href="https://github.com/JacopoPan/aerial-autonomy-stack/actions/workflows/aas-gym-pip-install.yml">
+    <img src="https://github.com/JacopoPan/aerial-autonomy-stack/actions/workflows/aas-gym-pip-install.yml/badge.svg" alt="aas-gym pip install">
+  </a>
+</div>
+
+Use with:
+```sh
+conda activate aas                                    # If using Anaconda
+cd aerial-autonomy-stack/scripts
+python3 gym_run.py --mode step                        # Manually step AAS @1Hz
+python3 gym_run.py --mode speedup                     # Speed-up test @50Hz
+python3 gym_run.py --mode vectorenv-speedup           # Vectorized speed-up test @50Hz
+```
+
+<!--
+WIP:
+python3 gym_run.py --mode learn                       # Train and test a PPO agent
+
+Debug with:
+docker exec -it simulation-container-inst0 tmux attach
+docker exec -it aircraft-container-inst0_1 tmux attach
+
+Clean up with:
+docker stop $(docker ps -q) && docker container prune -f && docker network prune -f
+-->
 
 ---
 > You've done a man's job, sir. I guess you're through, huh?
@@ -520,5 +557,32 @@ Distributed under the MIT License. See `LICENSE.txt` for more information. Copyr
 - In ArdupilotInterface's action callbacks, std::shared_lock<std::shared_mutex> lock(node_data_mutex_); could be used on the reads of lat_, lon_, alt_
 - QGC does not save roll and pitch in the telemetry bar for PX4 VTOLs (MAV_TYPE 22)
 - PX4 quad max tilt is limited by the anti-windup gain (zero it to deactivate it): const float arw_gain = 2.f / _gain_vel_p(0);
+
+## Future Work
+
+### Feature: Betaflight SITL
+
+> Implement a C++ gz-transport/UDP bridge between Gazebo Sim and Betaflight SITL
+
+- https://www.betaflight.com/docs/development/SITL
+- https://github.com/Aeroloop/betaloop
+- https://github.com/utiasDSL/gym-pybullet-drones/blob/a8c238c21c7586ee1735bafb358a4d5637402f14/gym_pybullet_drones/envs/BetaAviary.py#L111C1-L172C56
+
+### More Out-there Ideas
+
+> Potential for technical spikes/long-term, nice-to-have features
+
+- Integrate a GIS world generator (e.g., Cesium)
+    - https://github.com/CesiumGS/cesium-native
+- Integrate a photorealistic simulator (e.g., IsaacSim)
+    - https://github.com/PegasusSimulator/PegasusSimulator
+- Integrate more realistic flight dynamics (e.g., JSBSim)
+    - https://github.com/JSBSim-Team/jsbsim
+- Integrate a VLA model bridging the `yolo_py` and `mission` packages
+- Re-instate Gazebo Sim support for Pixhawk HITL simulation using MAVLink HIL_ interface
+    - https://mavlink.io/en/messages/common.html
+    - https://github.com/tiiuae/px4-gzsim-plugins/
+    - https://docs.px4.io/main/en/simulation/hitl
+    - https://ardupilot.org/dev/docs/hitl-simulators.html
 
 -->
