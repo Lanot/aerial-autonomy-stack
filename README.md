@@ -468,13 +468,13 @@ HITL=true DRONE_ID=1 SIM_SUBNET=172.30 AIR_SUBNET=10.223 ./deploy_run.sh        
 
 ```sh
 # On the Jetson with IPs ending in 90.2
-HITL=true DRONE_ID=2 SIM_SUBNET=172.30 AIR_SUBNET=10.223 ./deploy_run.sh
+HITL=true DRONE_ID=2 SIM_SUBNET=172.30 AIR_SUBNET=10.223 ./deploy_run.sh                      # Add HEADLESS=false if a screen is connected to the Jetson
 ```
 
 Then, start the simulation:
 ```sh
 # On the computer with IPs ending in 90.100
-HITL=true NUM_QUADS=2 SIM_SUBNET=172.30 AIR_SUBNET=10.223 ./sim_run.sh
+HITL=true NUM_QUADS=2 SIM_SUBNET=172.30 ./sim_run.sh
 ```
 
 Finally, start QGC and the Zenoh bridge:
