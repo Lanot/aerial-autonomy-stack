@@ -172,6 +172,7 @@ aerial-autonomy-stack
     │   │   ├── alti_transition_quad                  # ArduPilot VTOL model
     │   │   ├── iris_with_ardupilot                   # ArduPilot quad model
     │   │   ├── sensor_camera                         # Camera model
+    │   │   ├── sensor_gimbal                         # 3D gimbal used with sensor_camera
     │   │   ├── sensor_lidar                          # LiDAR model
     │   │   ├── standard_vtol                         # PX4 VTOL model
     │   │   └── x500                                  # PX4 quad model
@@ -282,7 +283,7 @@ done
 > ```
 > </details>
 > <details>
-> <summary>Use <b>ROS2 drone motion primitives</b> from CLI <i>(click to expand)</i></summary>
+> <summary>Use <b>ROS2 drone and gimbal control primitives</b> from CLI <i>(click to expand)</i></summary>
 >
 > ```sh
 > # Takeoff action (quads and VTOLs)
@@ -302,6 +303,10 @@ done
 >
 > # SetSpeed service (always limited by the autopilot params, for quads applies from the next command, not effective on ArduPilot VTOLs) 
 > ros2 service call /Drone${DRONE_ID}/set_speed autopilot_interface_msgs/srv/SetSpeed '{speed: 3.0}'
+>
+> # Gimbal status and position control (in radians)
+> ros2 topic echo /gimbal_state
+> ros2 topic pub -1 /gimbal_yaw_cmd std_msgs/msg/Float64 "{data: -1.57}"
 > ```
 > To analyze the flight logs in the `Simulation`'s Xterm terminal:
 > ```sh

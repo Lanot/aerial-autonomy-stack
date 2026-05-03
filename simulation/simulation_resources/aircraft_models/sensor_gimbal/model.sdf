@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sdf version='1.9'>
+  <model name='gimbal_3d'>
+    <self_collide>false</self_collide>
+
+    <link name="gimbal/base_link">
+      <inertial>
+        <mass>0.001</mass>
+        <inertia><ixx>0.00001</ixx><iyy>0.00001</iyy><izz>0.00001</izz></inertia>
+      </inertial>
+      <visual name="base_vis">
+        <geometry><box><size>0.04 0.04 0.01</size></box></geometry>
+        <material><ambient>0.2 0.2 0.2 1</ambient><diffuse>0.2 0.2 0.2 1</diffuse></material>
+      </visual>
+    </link>
+
+    <link name="yaw_link">
+      <pose>0 0 -0.02 0 0 0</pose>
+      <inertial>
+        <mass>0.005</mass>
+        <inertia><ixx>0.00001</ixx><iyy>0.00001</iyy><izz>0.00001</izz></inertia>
+      </inertial>
+      <visual name="yaw_vis">
+        <geometry><box><size>0.01 0.01 0.04</size></box></geometry>
+        <material><ambient>1 0 0 1</ambient><diffuse>1 0 0 1</diffuse></material>
+      </visual>
+    </link>
+    <joint name="yaw_joint" type="revolute">
+      <parent>gimbal/base_link</parent><child>yaw_link</child>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <dynamics><damping>0.05</damping></dynamics>
+      </axis>
+    </joint>
+
+    <link name="roll_link">
+      <pose>0.02 0 -0.04 0 0 0</pose>
+      <inertial>
+        <mass>0.005</mass>
+        <inertia><ixx>0.00001</ixx><iyy>0.00001</iyy><izz>0.00001</izz></inertia>
+      </inertial>
+      <visual name="roll_vis">
+        <geometry><box><size>0.04 0.01 0.01</size></box></geometry>
+        <material><ambient>0 1 0 1</ambient><diffuse>0 1 0 1</diffuse></material>
+      </visual>
+    </link>
+    <joint name="roll_joint" type="revolute">
+      <parent>yaw_link</parent><child>roll_link</child>
+      <axis>
+        <xyz>1 0 0</xyz>
+        <limit><lower>-0.785</lower><upper>0.785</upper></limit>
+        <dynamics><damping>0.05</damping></dynamics>
+      </axis>
+    </joint>
+
+    <link name="pitch_link">
+      <pose>0.04 0 -0.04 0 0 0</pose>
+      <inertial>
+        <mass>0.005</mass>
+        <inertia><ixx>0.00001</ixx><iyy>0.00001</iyy><izz>0.00001</izz></inertia>
+      </inertial>
+      <visual name="pitch_vis">
+        <geometry><box><size>0.01 0.04 0.04</size></box></geometry>
+        <material><ambient>0 0 1 1</ambient><diffuse>0 0 1 1</diffuse></material>
+      </visual>
+    </link>
+    <joint name="pitch_joint" type="revolute">
+      <parent>roll_link</parent><child>pitch_link</child>
+      <axis>
+        <xyz>0 1 0</xyz>
+        <limit><lower>-1.57</lower><upper>3.14</upper></limit>
+        <dynamics><damping>0.05</damping></dynamics>
+      </axis>
+    </joint>
+
+    <!-- Option 1: position control -->
+    <plugin filename="gz-sim-joint-position-controller-system" name="gz::sim::systems::JointPositionController">
+      <joint_name>yaw_joint</joint_name>
+      <sub_topic>gimbal_3d/yaw_cmd</sub_topic>
+    </plugin>
+    <plugin filename="gz-sim-joint-position-controller-system" name="gz::sim::systems::JointPositionController">
+      <joint_name>roll_joint</joint_name>
+      <sub_topic>gimbal_3d/roll_cmd</sub_topic>
+    </plugin>
+    <plugin filename="gz-sim-joint-position-controller-system" name="gz::sim::systems::JointPositionController">
+      <joint_name>pitch_joint</joint_name>
+      <sub_topic>gimbal_3d/pitch_cmd</sub_topic>
+    </plugin>
+
+    <!-- Option 2: velocity control (note that it might get stuck if joint limits are reached https://github.com/gazebosim/gz-sim/issues/1684) -->
+    <!-- <plugin filename="gz-sim-joint-controller-system" name="gz::sim::systems::JointController">
+      <joint_name>yaw_joint</joint_name>
+      <use_velocity_commands>true</use_velocity_commands>
+      <sub_topic>gimbal_3d/yaw_cmd</sub_topic>
+    </plugin>
+    <plugin filename="gz-sim-joint-controller-system" name="gz::sim::systems::JointController">
+      <joint_name>roll_joint</joint_name>
+      <use_velocity_commands>true</use_velocity_commands>
+      <sub_topic>gimbal_3d/roll_cmd</sub_topic>
+    </plugin>
+    <plugin filename="gz-sim-joint-controller-system" name="gz::sim::systems::JointController">
+      <joint_name>pitch_joint</joint_name>
+      <use_velocity_commands>true</use_velocity_commands>
+      <sub_topic>gimbal_3d/pitch_cmd</sub_topic>
+    </plugin> -->
+
+    <plugin filename="gz-sim-joint-state-publisher-system" name="gz::sim::systems::JointStatePublisher">
+      <joint_name>yaw_joint</joint_name>
+      <joint_name>roll_joint</joint_name>
+      <joint_name>pitch_joint</joint_name>
+      <!-- <topic>gimbal_3d_state</topic> -->
+    </plugin>
+
+  </model>
+</sdf>
