@@ -1,7 +1,5 @@
 # aerial-autonomy-stack
 
-<img align="right" height="120" alt="mission-patch" src="https://github.com/user-attachments/assets/252cc420-9527-4342-9ffd-c6bec77ebdf3" />
-
 *Aerial autonomy stack* (AAS) is an all-in-one software stack to:
 
 1. **Develop** multi-drone autonomy—with ROS2, PX4, and ArduPilot
@@ -31,7 +29,7 @@ For an example bill of materials, read [`BOM.md`](/supplementary/BOM.md); for mo
 - **Steppable** [Gymnasium environment](https://gymnasium.farama.org/index.html) and **faster-than-real-time**, **multi-instance** simulation
 - Gazebo's wind effects plugin
 - **Dockerized simulation** based on [Ubuntu with CUDA and cuDNN](https://catalog.ngc.nvidia.com/orgs/nvidia/containers/cuda/tags)
-- **Dockerized deployment** based on [NVIDIA JetPack](https://catalog.ngc.nvidia.com/orgs/nvidia/containers/l4t-jetpack/tags)
+- **Dockerized deployment** based on [NVIDIA JetPack](https://catalog.ngc.nvidia.com/orgs/nvidia/containers/l4t-jetpack/tags) with [DeepStream](https://docs.nvidia.com/metropolis/deepstream/dev-guide/text/DS_Installation.html#platform-and-os-compatibility)
 - **Windows 11** compatibility *via* WSL
 - Multi-**Jetson-in-the-loop (HITL) simulation** to test NVIDIA- and ARM-based on-board compute
 - Dual network to separate simulated sensors (`SIM_SUBNET`) and inter-vehicle comms (`AIR_SUBNET`)
@@ -172,6 +170,7 @@ aerial-autonomy-stack
     │   │   ├── alti_transition_quad                  # ArduPilot VTOL model
     │   │   ├── iris_with_ardupilot                   # ArduPilot quad model
     │   │   ├── sensor_camera                         # Camera model
+    │   │   ├── sensor_gimbal                         # 3D gimbal used with sensor_camera
     │   │   ├── sensor_lidar                          # LiDAR model
     │   │   ├── standard_vtol                         # PX4 VTOL model
     │   │   └── x500                                  # PX4 quad model
@@ -190,19 +189,22 @@ aerial-autonomy-stack
 <summary>Dependency management <i>(click to expand)</i></summary>
 
 - [x] Host OS: [Ubuntu 24.04/22.04 (LTS, ESM 4/2034)](https://ubuntu.com/about/release-cycle)
+    - **TODO: test on Ubuntu 26.04**
 - [ ] Jetpack: [6.2.1 (rev. 1) [L4T 36.4.4, Ubuntu 22-based]](https://developer.nvidia.com/embedded/jetpack-archive)
-    - **TODO: test on JP 6.2.2 [L4T 36.5.0, Ubuntu 22-based], latest (last?) JP supported on Orin Series**
+    - **TODO: test on JP 6.2.2 [L4T 36.5.0, Ubuntu 22-based]**
 - [x] [`nvidia-driver-580`](https://developer.nvidia.com/datacenter-driver-archive)
-    - **NOTE: `nvidia-driver-590` does not support the [presets in Ubuntu 22's GStreamer 1.20](https://docs.nvidia.com/video-technologies/video-codec-sdk/13.0/deprecation-notices/index.html) and it requires updating the `amd64` base images to Ubuntu 24 or compiling [GStreamer 1.24](https://discourse.gstreamer.org/t/nvcodec-nvenc-nvidia-deprecates-support-for-old-videocodec-sdk-h-264-hevc-encoder-presets-with-driver-r550-in-q124/182) from source**
+    - **NOTE: `nvidia-driver-590/595` does not support the [presets in Ubuntu 22's GStreamer 1.20](https://docs.nvidia.com/video-technologies/video-codec-sdk/13.0/deprecation-notices/index.html) and it requires updating the `amd64` base images to Ubuntu 24 or compiling [GStreamer 1.24](https://discourse.gstreamer.org/t/nvcodec-nvenc-nvidia-deprecates-support-for-old-videocodec-sdk-h-264-hevc-encoder-presets-with-driver-r550-in-q124/182) from source**
     - **AAS sticks with `nvidia-driver-580` and Ubuntu 22 `amd64` base images for parity with the L4T 36.x, Ubuntu 22-based `arm64` base image**
 - [x] [Docker Engine v29](https://docs.docker.com/engine/release-notes/)
 - [x] [NVIDIA Container Toolkit 1.19](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/index.html)
 - [x] `amd64` base image: [`cuda:12.9.1-cudnn-runtime-ubuntu22.04`](https://catalog.ngc.nvidia.com/orgs/nvidia/containers/cuda/tags)
     - **NOTE: `onnxruntime-gpu` 1.23 does not support CUDA 13**
 - [x] `arm64`/Jetson base image: [`l4t-jetpack:r36.4.0`](https://catalog.ngc.nvidia.com/orgs/nvidia/containers/l4t-jetpack/tags)
+- [x] [DeepStream 7.1](https://docs.nvidia.com/metropolis/deepstream/dev-guide/text/DS_Installation.html#platform-and-os-compatibility)
+    - **NOTE: latest DeepStream supported on Orin Series**
 - [x] [ROS2 Humble (LTS, EOL 5/2027)](https://docs.ros.org/en/rolling/Releases.html)
 - [x] [Gazebo Sim Harmonic (LTS, EOL 9/2028)](https://gazebosim.org/docs/latest/releases/)
-- [x] [PX4 1.16.1](https://github.com/PX4/PX4-Autopilot/releases)
+- [x] [PX4 1.16.2](https://github.com/PX4/PX4-Autopilot/releases)
 - [x] [ArduPilot 4.6.3](https://github.com/ArduPilot/ardupilot/releases)
 - [x] [YOLO26](https://github.com/ultralytics/ultralytics/releases)
 - [x] [ONNX Runtime 1.23.2](https://github.com/microsoft/onnxruntime/releases)
@@ -280,7 +282,7 @@ done
 > ```
 > </details>
 > <details>
-> <summary>Use <b>ROS2 drone motion primitives</b> from CLI <i>(click to expand)</i></summary>
+> <summary>Use <b>ROS2 drone and gimbal control primitives</b> from CLI <i>(click to expand)</i></summary>
 >
 > ```sh
 > # Takeoff action (quads and VTOLs)
@@ -300,6 +302,10 @@ done
 >
 > # SetSpeed service (always limited by the autopilot params, for quads applies from the next command, not effective on ArduPilot VTOLs) 
 > ros2 service call /Drone${DRONE_ID}/set_speed autopilot_interface_msgs/srv/SetSpeed '{speed: 3.0}'
+>
+> # Gimbal status and position control (in radians)
+> ros2 topic echo /gimbal_state
+> ros2 topic pub -1 /gimbal_yaw_cmd std_msgs/msg/Float64 "{data: -1.57}"
 > ```
 > To analyze the flight logs in the `Simulation`'s Xterm terminal:
 > ```sh
@@ -433,6 +439,14 @@ AUTOPILOT=px4 DRONE_ID=1 CAMERA=true LIDAR=false AIR_SUBNET=10.223 HEADLESS=true
 # HEADLESS/CAMERA/LIDAR=true, false
 ```
 
+Start the `ground-image` on a laptop to connect QGC, Zenoh, SSH, and GStreamer:
+
+```sh
+cd aerial-autonomy-stack/scripts/
+./sim_build.sh                                        # Build all images for amd64, including ground-image
+GROUND=true NUM_QUADS=1 AIR_SUBNET=10.223 HEADLESS=false ./deploy_run.sh
+```
+
 <details>
 <summary><b>Advanced Topic: HITL Simulation</b> <i>(click to expand)</i></summary>
 
@@ -458,19 +472,19 @@ HITL=true DRONE_ID=1 SIM_SUBNET=172.30 AIR_SUBNET=10.223 ./deploy_run.sh        
 
 ```sh
 # On the Jetson with IPs ending in 90.2
-HITL=true DRONE_ID=2 SIM_SUBNET=172.30 AIR_SUBNET=10.223 ./deploy_run.sh
+HITL=true DRONE_ID=2 SIM_SUBNET=172.30 AIR_SUBNET=10.223 ./deploy_run.sh                      # Add HEADLESS=false if a screen is connected to the Jetson
 ```
 
 Then, start the simulation:
 ```sh
 # On the computer with IPs ending in 90.100
-HITL=true NUM_QUADS=2 SIM_SUBNET=172.30 AIR_SUBNET=10.223 ./sim_run.sh
+HITL=true NUM_QUADS=2 SIM_SUBNET=172.30 ./sim_run.sh
 ```
 
 Finally, start QGC and the Zenoh bridge:
 ```sh
 # On the computer with IPs ending in 90.101
-HITL=true GROUND=true HEADLESS=false NUM_QUADS=2 ./deploy_run.sh
+HITL=true GROUND=true NUM_QUADS=2 AIR_SUBNET=10.223 HEADLESS=false ./deploy_run.sh
 ```
 
 > **Note:** running only the first 3 commands with `GND_CONTAINER=false` puts the Zenoh bridge on the `SIM_SUBNET`, removing the need for the optional `AIR_SUBNET` and the computer with IP ending in `90.101`
