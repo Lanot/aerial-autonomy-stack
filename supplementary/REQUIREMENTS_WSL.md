@@ -2,7 +2,7 @@
 
 > These instructions are tested using Windows 11 Enterprise 23H2 (OS build 22631.6199) on an i7-11 with 32GB RAM and RTX A2000
 
-## Setup WSLg for Ubuntu 22
+## Setup WSL for Ubuntu 22
 
 > The latest Windows Subsystem for Linux (WSL2) and WSLg (WSL2 extension with GUI capabilities) are included in Windows 11
 
@@ -21,7 +21,7 @@ sudo apt update && sudo apt upgrade
 sudo apt install -y x11-apps x11-xserver-utils        # Install X11 apps and xserver
 xclock                                                # Test: a new window with a clock should appear
 
-free -h                                               # Check the memory and swap made available to WSL
+free -h                                               # (optional) Check the memory and swap made available to WSL
 ```
 
 > [!WARNING]
@@ -48,6 +48,11 @@ free -h                                               # Check the memory and swa
 > free -h                           # Check the available memory and swap reflect .wslconfig
 > ```
 
+---
+
+> [!TIP]
+> Run [`check_requirements.sh`](/scripts/check_requirements.sh) **inside WSL** to verify whether you need to follow the steps below
+
 ## Install the NVIDIA Driver on Windows 11
 
 Download and install the **NVIDIA driver 580 on Windows** using the [NVIDIA App](https://www.nvidia.com/en-us/software/nvidia-app/) 
@@ -62,14 +67,12 @@ wsl ~                               # Access WSL from Windows PowerShell
 
 nvidia-smi                          # From WSL, check NVIDIA driver (these instructions are tested on Driver Version: 581.80, CUDA Version:13.0)
 
-# Important: if you have hybrid Intel CPU graphics (most laptops), force the use of the GPU for OpenGL rendering
-echo 'export MESA_D3D12_DEFAULT_ADAPTER_NAME=NVIDIA' >> ~/.bashrc && source ~/.bashrc
-
 sudo apt update && sudo apt install -y mesa-utils
-glxinfo -B                          # Check the NVIDIA GPU is the OpenGL renderer
+glxinfo -B                          # (optional) Check OpenGL renderer, to force GPU rendering, use $ echo 'export MESA_D3D12_DEFAULT_ADAPTER_NAME=NVIDIA' >> ~/.bashrc && source ~/.bashrc
+
 ```
 
-## Install Docker Engine inside WSLg
+## Install Docker Engine inside WSL
 
 ```sh
 wsl ~                               # Access WSL from Windows PowerShell
@@ -96,7 +99,7 @@ sudo apt-get update
 sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
 sudo docker run hello-world         # Test Docker is working
-sudo docker version                 # Check version, 28.3.0 at the time of writing
+sudo docker version                 # (optional) Check version
 
 # Remove the need to sudo the docker command
 sudo groupadd docker
@@ -106,7 +109,7 @@ newgrp docker                       # Reboot (exit; wsl --shutdown; wsl ~)
 docker run hello-world              # Test Docker is working without sudo
 ```
 
-## Install NVIDIA Container Toolkit inside WSLg
+## Install NVIDIA Container Toolkit inside WSL
 
 ```sh
 wsl ~                               # Access WSL from Windows PowerShell
@@ -120,7 +123,7 @@ curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo gpg --dear
     sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
 
 sudo apt-get update
-export NVIDIA_CONTAINER_TOOLKIT_VERSION=1.18.0-1
+export NVIDIA_CONTAINER_TOOLKIT_VERSION=1.19.0-1
 sudo apt-get install -y \
       nvidia-container-toolkit=${NVIDIA_CONTAINER_TOOLKIT_VERSION} \
       nvidia-container-toolkit-base=${NVIDIA_CONTAINER_TOOLKIT_VERSION} \
@@ -130,9 +133,9 @@ sudo apt-get install -y \
 sudo nvidia-ctk runtime configure --runtime=docker
 sudo systemctl restart docker
 
-docker info | grep -i runtime       # Check `nvidia` runtime is available
+docker info | grep -i runtime       # Check the `nvidia` runtime is available
 
-docker run --rm --gpus all nvcr.io/nvidia/cuda:12.2.0-base-ubuntu22.04 nvidia-smi        # Test nvidia-smi works in a container with CUDA
+docker run --rm --gpus all nvcr.io/nvidia/cuda:12.9.1-cudnn-runtime-ubuntu22.04 nvidia-smi # Test nvidia-smi works in a container with CUDA
 ```
 
 ## Troubleshoot

@@ -17,23 +17,30 @@ GROUND_ID="${GROUND_ID:-101}" # Last byte of the simulation container IP (defaul
 DRONE_TYPE="${DRONE_TYPE:-quad}" # Options: quad (default), vtol
 DRONE_ID="${DRONE_ID:-1}" # Id of aircraft (default = 1)
 #
-NUM_QUADS="${NUM_QUADS:-1}" # Number of quadcopters (default = 1)
-NUM_VTOLS="${NUM_VTOLS:-0}" # Number of VTOLs (default = 0)
-#
 DEV="${DEV:false}" # Options: true, false (default)
 HITL="${HITL:-false}" # Options: true, false (default)
 GND_CONTAINER="${GND_CONTAINER:-true}" # Options: true (default), false
+# Only used by ground-container
+NUM_QUADS="${NUM_QUADS:-1}" # Number of quadcopters (default = 1)
+NUM_VTOLS="${NUM_VTOLS:-0}" # Number of VTOLs (default = 0)
 
 GROUND="${GROUND:-false}" # Options: true, false (default)
 if [[ "$GROUND" == "true" ]]; then
   # This is a bit hacky, but allows to use the deploy_run.sh script for the ground container
+  # Without GPU requirements: --device /dev/dri --gpus all --env NVIDIA_DRIVER_CAPABILITIES=all
+  # Forcing HEADLESS to false, opening REMOTE_VIDEO_STREAMS and SSH_CONNECTIONS
+  xhost +local:docker # Grant access to the X server
   docker run -it --rm \
-    --volume /tmp/.X11-unix:/tmp/.X11-unix:rw --device /dev/dri --gpus all \
-    --env DISPLAY=$DISPLAY --env QT_X11_NO_MITSHM=1 --env NVIDIA_DRIVER_CAPABILITIES=all --env XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR \
-    --env HEADLESS=$HEADLESS \
+    --volume /tmp/.X11-unix:/tmp/.X11-unix:rw \
+    --env DISPLAY=$DISPLAY --env QT_X11_NO_MITSHM=1 --env XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR \
+    --env HEADLESS=false \
     --env NUM_QUADS=$NUM_QUADS --env NUM_VTOLS=$NUM_VTOLS \
     --env SIMULATED_TIME=$HITL \
     --env ROS_DOMAIN_ID=$GROUND_ID \
+    --env AIR_SUBNET=$AIR_SUBNET \
+    --env HOST_INPUT_GID=$(getent group input | cut -d: -f3) \
+    --env REMOTE_VIDEO_STREAMS=true \
+    --env SSH_CONNECTIONS=true \
     --net=host \
     --privileged \
     --name ground-container \
@@ -82,6 +89,7 @@ docker run $DOCKER_RUN_FLAGS \
   --env SIM_SUBNET=$SIM_SUBNET --env AIR_SUBNET=$AIR_SUBNET --env SIM_ID=$SIM_ID --env GROUND_ID=$GROUND_ID \
   --env GND_CONTAINER=$GND_CONTAINER \
   --env ROS_DOMAIN_ID=$DRONE_ID \
+  --env REMOTE_VIDEO_STREAMS=true \
   --net=host \
   --privileged \
   --name aircraft-container_$DRONE_ID \

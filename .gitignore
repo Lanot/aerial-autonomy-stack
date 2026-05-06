@@ -1,7 +1,92 @@
-/github_clones/
+# Auto-generated files
 /aircraft/aircraft_ws/src/ground_system_msgs/
 /aircraft/aircraft_resources/comms/zenoh_config_air.json5
 /aas-gym/ppo_agent.zip
+
+# GitHub clones of 3rd party repositories
+/github_clones/
+
+# Meshes unpacked from simulation_resources.zip
+simulation/simulation_resources/aircraft_models/alti_transition_quad/materials/textures/AltiTransitionMap.png
+simulation/simulation_resources/aircraft_models/alti_transition_quad/meshes/alti_transition_aileron_left.dae
+simulation/simulation_resources/aircraft_models/alti_transition_quad/meshes/alti_transition_aileron_right.dae
+simulation/simulation_resources/aircraft_models/alti_transition_quad/meshes/alti_transition_base.dae
+simulation/simulation_resources/aircraft_models/alti_transition_quad/meshes/alti_transition_elevator.dae
+simulation/simulation_resources/aircraft_models/alti_transition_quad/meshes/alti_transition_engine.dae
+simulation/simulation_resources/aircraft_models/alti_transition_quad/meshes/prop_ccw.dae
+simulation/simulation_resources/aircraft_models/alti_transition_quad/meshes/prop_cw.dae
+simulation/simulation_resources/aircraft_models/iris_with_ardupilot/meshes/iris.dae
+simulation/simulation_resources/aircraft_models/iris_with_ardupilot/meshes/iris_prop_ccw.dae
+simulation/simulation_resources/aircraft_models/iris_with_ardupilot/meshes/iris_prop_cw.dae
+simulation/simulation_resources/aircraft_models/standard_vtol/meshes/iris_prop_ccw.dae
+simulation/simulation_resources/aircraft_models/standard_vtol/meshes/iris_prop_cw.dae
+simulation/simulation_resources/aircraft_models/standard_vtol/meshes/x8_elevon_left.dae
+simulation/simulation_resources/aircraft_models/standard_vtol/meshes/x8_elevon_right.dae
+simulation/simulation_resources/aircraft_models/standard_vtol/meshes/x8_wing.dae
+simulation/simulation_resources/aircraft_models/x500/materials/textures/CF.png
+simulation/simulation_resources/aircraft_models/x500/materials/textures/nxp.png
+simulation/simulation_resources/aircraft_models/x500/materials/textures/rd.png
+simulation/simulation_resources/aircraft_models/x500/meshes/1345_prop_ccw.stl
+simulation/simulation_resources/aircraft_models/x500/meshes/1345_prop_cw.stl
+simulation/simulation_resources/aircraft_models/x500/meshes/5010Base.dae
+simulation/simulation_resources/aircraft_models/x500/meshes/5010Bell.dae
+simulation/simulation_resources/aircraft_models/x500/meshes/CF.png
+simulation/simulation_resources/aircraft_models/x500/meshes/NXP-HGD-CF.dae
+simulation/simulation_resources/simulation_worlds/airstream/meshes/airstream.fbx
+simulation/simulation_resources/simulation_worlds/apple/meshes/even_simpler_tree.fbx
+simulation/simulation_resources/simulation_worlds/apple/meshes/simpler_tree.fbx
+simulation/simulation_resources/simulation_worlds/apple/meshes/tree.fbx
+simulation/simulation_resources/simulation_worlds/birch/meshes/birch-leaf-diff.png
+simulation/simulation_resources/simulation_worlds/birch/meshes/birch-trunk-diff.png
+simulation/simulation_resources/simulation_worlds/birch/meshes/simpler_birch.png
+simulation/simulation_resources/simulation_worlds/crash/meshes/crash.fbm/texture.jpg
+simulation/simulation_resources/simulation_worlds/crash/meshes/crash.fbx
+simulation/simulation_resources/simulation_worlds/duck/meshes/duck.fbx
+simulation/simulation_resources/simulation_worlds/duck/meshes/simpler_duck.fbx
+simulation/simulation_resources/simulation_worlds/gazebo/meshes/gazebo.fbx
+simulation/simulation_resources/simulation_worlds/jeep/meshes/car_jeep_ren.jpg
+simulation/simulation_resources/simulation_worlds/jeep/meshes/jeep.dae
+simulation/simulation_resources/simulation_worlds/orchard_gis_map/meshes/orchard_map.fbm/GOOGLE_SAT_WM.jpg
+simulation/simulation_resources/simulation_worlds/orchard_gis_map/meshes/orchard_map.fbx
+simulation/simulation_resources/simulation_worlds/person_standing/materials/textures/eyebrow001.png
+simulation/simulation_resources/simulation_worlds/person_standing/materials/textures/green_eye.png
+simulation/simulation_resources/simulation_worlds/person_standing/materials/textures/jeans01_normals.png
+simulation/simulation_resources/simulation_worlds/person_standing/materials/textures/jeans_basic_diffuse.png
+simulation/simulation_resources/simulation_worlds/person_standing/materials/textures/male02_diffuse_black.png
+simulation/simulation_resources/simulation_worlds/person_standing/materials/textures/teeth.png
+simulation/simulation_resources/simulation_worlds/person_standing/materials/textures/tshirt02_normals.png
+simulation/simulation_resources/simulation_worlds/person_standing/materials/textures/tshirt02_texture.png
+simulation/simulation_resources/simulation_worlds/person_standing/materials/textures/young_lightskinned_male_diffuse.png
+simulation/simulation_resources/simulation_worlds/person_standing/meshes/standing.dae
+simulation/simulation_resources/simulation_worlds/rabbit/meshes/rabbit.fbx
+simulation/simulation_resources/simulation_worlds/rabbit/meshes/simpler_rabbit.fbx
+simulation/simulation_resources/simulation_worlds/shibuya_3d/meshes/shibuya_3d.fbx
+simulation/simulation_resources/simulation_worlds/skibidi/meshes/skibidi.fbx
+simulation/simulation_resources/simulation_worlds/suburb/meshes/suburb.fbx
+simulation/simulation_resources/simulation_worlds/town_photogrammetry/meshes/town.fbx
+simulation/simulation_resources/simulation_worlds/unicorn/meshes/simpler_unicorn.dae
+simulation/simulation_resources/simulation_worlds/unicorn/meshes/unicorn.fbx
+# v2
+simulation/simulation_resources/aircraft_models/alti_transition_quad/materials/textures/x8.tga
+simulation/simulation_resources/simulation_worlds/birch/meshes/birch.mtl
+simulation/simulation_resources/simulation_worlds/birch/meshes/birch.obj
+simulation/simulation_resources/simulation_worlds/birch/meshes/simpler_birch.mtl
+simulation/simulation_resources/simulation_worlds/birch/meshes/simpler_birch.obj
+simulation/simulation_resources/simulation_worlds/subaru/meshes/Body.bmp
+simulation/simulation_resources/simulation_worlds/subaru/meshes/Brake_Light.bmp
+simulation/simulation_resources/simulation_worlds/subaru/meshes/Bumpers.bmp
+simulation/simulation_resources/simulation_worlds/subaru/meshes/Grill.bmp
+simulation/simulation_resources/simulation_worlds/subaru/meshes/License_Plate_-_Front.bmp
+simulation/simulation_resources/simulation_worlds/subaru/meshes/License_Plate_-_Rear.bmp
+simulation/simulation_resources/simulation_worlds/subaru/meshes/Mirrors.bmp
+simulation/simulation_resources/simulation_worlds/subaru/meshes/Rear_Window.bmp
+simulation/simulation_resources/simulation_worlds/subaru/meshes/Wheel.bmp
+simulation/simulation_resources/simulation_worlds/subaru/meshes/subaru.mtl
+simulation/simulation_resources/simulation_worlds/subaru/meshes/subaru.obj
+
+# Examples
+/aircraft/aircraft_resources/missions/cat.yaml
+/aircraft/aircraft_resources/missions/mouse.yaml
 
 ### C++ .gitignore
 
@@ -249,5 +334,3 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
-
-# Streamlit

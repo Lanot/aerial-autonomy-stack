@@ -1,6 +1,9 @@
 # Pre-installation Steps for AAS on Ubuntu
 
-> These instructions are tested using Ubuntu 22.04.5 LTS
+> These instructions are tested using Ubuntu 22.04.5 LTS and Ubuntu 24.04.3 LTS
+
+> [!TIP]
+> Run [`check_requirements.sh`](/scripts/check_requirements.sh) to verify whether you need to follow the steps below
 
 ## Install Ubuntu with NVIDIA Driver
 
@@ -10,18 +13,16 @@
   - Run "Software Updater" and restart
   - "Update All" in "Ubuntu Software" (including `killall snap-store && sudo snap refresh snap-store`)
   - Update and restart for "Device Firmware" as necessary
-- In "Software & Updates", select `nvidia-driver-580 (proprietary, tested)`
+- In "Software & Updates", select "Using NVIDIA driver metapackage from `nvidia-driver-580` (proprietary)"
+- (optional) Go to "Settings" -> "Power", select  the "Performance" "Power Mode" and disable all "Power Saving Options"
 
 ```sh
 sudo apt update && sudo apt upgrade
 
-nvidia-smi                          # Should report "Driver Version: 580.65.06, CUDA Version: 13.0"
-
-# Set NVIDIA Performance Mode
-sudo prime-select nvidia            # Reboot and check in Ubuntu's "Settings" -> "About" -> "Graphics" is your NVIDIA card
+nvidia-smi                          # Should report something like "Driver Version: 580.65.06, CUDA Version: 13.0"
 
 sudo apt install -y mesa-utils
-glxinfo | grep "OpenGL renderer"    # Check the GPU is the OpenGL renderer
+glxinfo -B                          # (optional) Check OpenGL renderer, to force GPU rendering, use $ sudo prime-select nvidia
 ```
 
 ## Install Docker Engine
@@ -49,7 +50,7 @@ sudo apt-get update
 sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
 sudo docker run hello-world         # Test Docker is working
-sudo docker version                 # Check version, 28.3.0 at the time of writing
+sudo docker version                 # (optional) Check version
 
 # Remove the need to sudo the docker command
 sudo groupadd docker
@@ -71,7 +72,7 @@ curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo gpg --dear
     sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
 
 sudo apt-get update
-export NVIDIA_CONTAINER_TOOLKIT_VERSION=1.18.0-1
+export NVIDIA_CONTAINER_TOOLKIT_VERSION=1.19.0-1
 sudo apt-get install -y \
       nvidia-container-toolkit=${NVIDIA_CONTAINER_TOOLKIT_VERSION} \
       nvidia-container-toolkit-base=${NVIDIA_CONTAINER_TOOLKIT_VERSION} \
@@ -81,9 +82,9 @@ sudo apt-get install -y \
 sudo nvidia-ctk runtime configure --runtime=docker
 sudo systemctl restart docker
 
-docker info | grep -i runtime       # Check `nvidia` runtime is available
+docker info | grep -i runtime       # Check the `nvidia` runtime is available
 
-docker run --rm --gpus all nvcr.io/nvidia/cuda:12.2.0-base-ubuntu22.04 nvidia-smi        # Test nvidia-smi works in a container with CUDA
+docker run --rm --gpus all nvcr.io/nvidia/cuda:12.9.1-cudnn-runtime-ubuntu22.04 nvidia-smi # Test nvidia-smi works in a container with CUDA
 ```
 
 ## Optimize Memory Usage
@@ -119,7 +120,3 @@ docker login nvcr.io                # To be able to reliably pull NVIDIA base im
 Username:                           # type $oauthtoken
 Password:                           # copy and paste the API key and press enter to pull base images from nvcr.io/
 ```
-
-<!--
-> Major dependencies: [*Ubuntu 22.04*](https://ubuntu.com/about/release-cycle) (LTS, ESM 4/2032), [*`nvidia-driver-580`*](https://developer.nvidia.com/datacenter-driver-archive) (latest as of 9/2025), [*Docker Engine v28*](https://docs.docker.com/engine/release-notes/28/), [*NVIDIA Container Toolkit 1.18*](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/index.html) (latest as of 11/2025), [*ROS2 Humble*](https://docs.ros.org/en/rolling/Releases.html) (LTS, EOL 5/2027), [*Gazebo Sim Harmonic*](https://gazebosim.org/docs/latest/releases/) (LTS, EOL 9/2028), [*PX4 1.16*](https://github.com/PX4/PX4-Autopilot/releases) interfaced *via* [XRCE-DDS](https://github.com/eProsima/Micro-XRCE-DDS/releases), [*ArduPilot 4.6*](https://github.com/ArduPilot/ardupilot/releases) interfaced *via* [MAVROS](https://github.com/mavlink/mavros/releases), [*YOLOv8*](https://github.com/ultralytics/ultralytics/releases) on [*ONNX Runtime 1.22*](https://onnxruntime.ai/getting-started) (latest stable releases as of 8/2025), [*L4T 36* (Ubuntu 22-based)/*JetPack 6*](https://developer.nvidia.com/embedded/jetpack-archive) (for deployment only, latest major release as of 8/2025), [WSLg](https://learn.microsoft.com/en-us/windows/wsl/tutorials/gui-apps) (for simulation and development on Windows 11 only)
--->

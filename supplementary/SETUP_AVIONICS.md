@@ -1,5 +1,11 @@
 # Setup Avionics
 
+> These instructions are tested on a [Holybro Jetson Baseboard](https://holybro.com/products/pixhawk-jetson-baseboard) with Pixhawk 6X and NVIDIA Orin NX 16GB on an [X650](https://holybro.com/collections/multicopter-kit/products/x650-development-kit)
+>
+> Alternative hardware options include: [ARK's Jetson PAB Orin NX NDAA](https://arkelectron.com/product/ark-jetson-orin-nx-ndaa-bundle/) and [Holybro's 6X Pro](https://holybro.com/collections/flight-controllers/products/pixhawk-6x-pro) paired with [Seeed Studio's A603/A608](https://www.seeedstudio.com/Jetson-A608-Carrier-Board-for-Orin-NX-Orin-Nano-Series-p-5853.html)
+>
+> For the complete bill of materials of an `aerial-autonomy-stack`-enabled quadcopter, read [`BOM.md`](/supplementary/BOM.md)
+
 ## Flash JetPack 6 to Jetson Orin
 
 Holybro Jetson baseboards normally ship with JetPack 5
@@ -8,27 +14,28 @@ To upgrade to JetPack 6, download NVIDIA SDK Manager on the Ubuntu 22 host compu
 
 ```sh
 cd ~/Downloads
-sudo apt install ./sdkmanager_2.3.0-12626_amd64.deb 
+sudo apt install ./sdkmanager_[version]-[build#]_amd64.deb # Currently version 2.4.0, build 13235
 sdkmanager                          # Log in with your https://developer.nvidia.com account 
 ```
 
 - Put the Holybro Jetson baseboard in recovery mode with the dedicated switch
 - Connect the USB-C port closes to the fan to the computer running `sdkmanager` and power on the board
-- On Step 1, select "Jetson", "Host Machine Ubuntu 22 x86_64", "Target Hardware Jetson Orin NX" (automatically detected), "SDK Version JetPack 6.2.1"
-- On Step 2, under "Target Components", select all "Jetson Linux" (uncheck all others)
-- Accept the "terms and conditions" and click "CONTINUE" (if prompted, click "Create" folder and input the password to `sudo`)
+- On Step 1, fields "Jetson", "Host Machine Ubuntu 2x x86_64", "Target Hardware Jetson Orin NX" are auto-detected, "SDK Version JetPack 6.2.1 (rev. 1)"
+- On Step 2, under "Target Components", select all "Jetson Linux" (uncheck all others: Runtime, SDK, Services)
+- Accept the "terms and conditions" and click "CONTINUE" (if prompted, click "Create" folder and/or input the password to `sudo`)
 - Wait for `sdkmanager` to download the necessary software
 - On the flash dialog after the download, choose "OEM Pre-config", username, password, and "Storage NVMe", click "Flash"
 - On `sdkmanager` click "FINISH AND EXIT" once the process is completed
-- With a screen, mouse, and keyboard connected to the Jetson basedboad, log in, finish the configuration, power-off, put the board out of recovery mode and power-on again
+- Power-off, put the board out of recovery mode, disconnect the USB-C cable, and power-on again
+- With a screen, mouse, and keyboard connected to the Jetson basedboad, log in, finish the configuration
 - Select an appropriate "Power Mode" (e.g. MAXN or 25W)
 
-<!-- 
+<!--
 - [PX4 documentation](https://github.com/PX4/PX4-Autopilot/blob/main/docs/en/companion_computer/holybro_pixhawk_jetson_baseboard.md#flashing-the-jetson-board)
 -->
 
 > [!WARNING]
-> At the time of writing, **Snap is broken on JetPack 6**, a fix is suggested [here](https://forums.developer.nvidia.com/t/chromium-other-browsers-not-working-after-flashing-or-updating-heres-why-and-quick-fix/338891)
+> At the time of writing, **Snap is broken on JetPack 6**, a fix is suggested [here](https://forums.developer.nvidia.com/t/chromium-other-browsers-not-working-after-flashing-or-updating-heres-why-and-quick-fix/338891) and was **tested on JP 6.2.1 (rev. 1)**
 > ```sh
 > snap download snapd --revision=24724
 > sudo snap ack snapd_24724.assert
@@ -83,7 +90,7 @@ sudo apt-get update
 sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
 sudo docker run hello-world         # Test Docker is working
-sudo docker version                 # Check version, 28.3.0 at the time of writing
+sudo docker version                 # (optional) Check version
 
 # Remove the need to sudo the docker command
 sudo groupadd docker
@@ -105,7 +112,7 @@ curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo gpg --dear
     sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
 
 sudo apt-get update
-export NVIDIA_CONTAINER_TOOLKIT_VERSION=1.18.0-1
+export NVIDIA_CONTAINER_TOOLKIT_VERSION=1.19.0-1
 sudo apt-get install -y \
       nvidia-container-toolkit=${NVIDIA_CONTAINER_TOOLKIT_VERSION} \
       nvidia-container-toolkit-base=${NVIDIA_CONTAINER_TOOLKIT_VERSION} \
@@ -115,9 +122,9 @@ sudo apt-get install -y \
 sudo nvidia-ctk runtime configure --runtime=docker
 sudo systemctl restart docker
 
-docker info | grep -i runtime       # Check `nvidia` runtime is available
+docker info | grep -i runtime       # Check the `nvidia` runtime is available
 
-docker run --rm --runtime=nvidia nvcr.io/nvidia/l4t-base:r36.2.0 nvidia-smi    # Test nvidia-smi works in a container with Linux4Tegra
+docker run --rm --runtime=nvidia nvcr.io/nvidia/l4t-jetpack:r36.4.0 nvidia-smi # Test nvidia-smi works in a container with Linux4Tegra
 ```
 
 ## Build and Flash PX4 or ArduPilot Firmware
@@ -156,7 +163,7 @@ docker run -it --rm --entrypoint bash -v ~/Downloads:/temp simulation-image -c \
 
 To flash the newly created `.px4` or `.apj` file to your autopilot board, follow [QGC's User Guide](https://docs.qgroundcontrol.com/Stable_V5.0/en/qgc-user-guide/setup_view/firmware.html) 
 
-## PX4: Configure 6x's Network and DDS Client
+## PX4: Configure 6X's Network and DDS Client
 
 On the Jetson Baseboard's Orin NX, under "Settings" -> "Network", configure the "PCI Ethernet" connection to "Manual" with IPv4 with address 10.10.1.44 and netmask 255.255.255.0
 
@@ -201,8 +208,8 @@ param set MAV_SYS_ID 1
 param set UXRCE_DDS_DOM_ID 1
 
 # Optionally
-param set MAV_2_CONFIG 0        # Disable MAVLINK on Ethernet (so Ethernet is used for XRCE-DDS only), if needed, also check params MAV_0_CONFIG, MAV_1_CONFIG
-param set UXRCE_DDS_CFG 1000    # Use DDS over Ethernet
+param set MAV_2_CONFIG 0            # Disable MAVLINK on Ethernet (so Ethernet is used for XRCE-DDS only), if needed, also check params MAV_0_CONFIG, MAV_1_CONFIG
+param set UXRCE_DDS_CFG 1000        # Use DDS over Ethernet
 ```
 
 > [!CAUTION]
@@ -210,7 +217,7 @@ param set UXRCE_DDS_CFG 1000    # Use DDS over Ethernet
 
 One should be able to `ping 10.10.1.44` (the Orin NX) from MAVLink Console on QGC; and `ping 10.10.1.33` (the autopilot) from a terminal on the Orin NX
 
-<!-- 
+<!--
 - [PX4 documentation](https://github.com/PX4/PX4-Autopilot/blob/main/docs/en/companion_computer/holybro_pixhawk_jetson_baseboard.md#ethernet-setup-using-netplan)
 -->
 
@@ -229,9 +236,50 @@ SERIAL2_PROTOCOL MAVLink2
 > [!CAUTION]
 > Match ArduPilot parameter `SYSID_THISMAV` with the `DRONE_ID` used to launch `./deploy_run.sh`: this is the `ROS_DOMAIN_ID` of the aircraft container
 
-<!-- 
+<!--
 - [ArduPilot serial configuration](https://ardupilot.org/copter/docs/common-serial-options.html)
 - [Jetson baseboard serial configuration](https://github.com/PX4/PX4-Autopilot/blob/main/docs/en/companion_computer/holybro_pixhawk_jetson_baseboard.md#serial-connection)
 - [MAVROS connection](https://github.com/mavlink/mavros/blob/ros2/mavros/README.md)
 - [Requesting MAVLink data from ArduPilot](https://ardupilot.org/dev/docs/mavlink-requesting-data.html)
 -->
+
+## Setup TELEM1 for the Radio Telemetry Link with the Ground Station
+
+TELEM1 is the [bottom-right 6-pin port on the Jetson Baseboard](https://docs.holybro.com/autopilot/pixhawk-baseboards/pixhawk-jetson-baseboard/ports-pinout#tel1-tel3-ports)
+
+To use it to connect a ground station (e.g. QGC) with a telemetry radio (e.g., [Holybro 1W SiK telemetry](https://holybro.com/collections/telemetry-radios/products/sik-telemetry-radio-1w) for point-to-point or [Holybro P900 telemetry](https://holybro.com/collections/telemetry-radios/products/microhard-radio) for point-to-multipoint), use the following parameters
+
+<!--
+- [Sik NET ID configuration](https://docs.px4.io/main/en/data_links/sik_radio#configuration-instructions)
+- [P900 Point-to-Multipoint](https://docs.holybro.com/radio/microhard-radio/point-to-multipoint-setup-with-microhard-radio)
+-->
+
+### PX4 Configuration
+
+```sh
+MAV_0_CONFIG        TELEM 1
+MAV_0_FLOW_CTRL     Auto-detected
+MAV_0_FORWARD       Enabled
+MAV_0_RADIO_CTL     Normal
+MAV_0_RATE          1200B/s
+
+SER_TEL1_BAUD       57600 8N1
+# All these are default values and tested with "Holybro SiK Telemetry Radio - Long Range; SKU: 17031"
+```
+
+### ArduPilot Configuration
+
+```sh
+BRD_SER1_RTSCTS     Auto
+
+SERIAL1_BAUD        57600
+SERIAL1_OPTIONS     0
+SERIAL1_PROTOCOL    MAVLink2
+# All these (except SERIAL1_PROTOCOL) are default values and tested with "Holybro SiK Telemetry Radio - Long Range; SKU: 17031"
+```
+
+## RC Input
+
+RC IN is the [bottom-left 5-pin port on the Jetson Baseboard](https://docs.holybro.com/autopilot/pixhawk-baseboards/pixhawk-jetson-baseboard/ports-pinout#rc-in-port)
+
+Use it to connect an RC receiver (e.g., [Radiomaster R81 V2](https://radiomasterrc.com/products/r81-receiver), [[user manual](https://cdn.shopify.com/s/files/1/0609/8324/7079/files/R81_Manual.pdf)]) and bind it to an RC (e.g., [Radiomaster Boxer 4in1](https://radiomasterrc.com/products/boxer-radio-controller-m2?variant=46486352232640), [[user manual](https://cdn.shopify.com/s/files/1/0701/8066/7584/files/BOXER_A1.9.pdf)])

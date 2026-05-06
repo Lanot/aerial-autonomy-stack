@@ -7,6 +7,7 @@
 #include <cstdlib>
 #include <string>
 #include <cstring>
+#include <sys/stat.h>
 // ROS 2 Includes
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/float64.hpp"
@@ -40,9 +41,25 @@ public:
         this->declare_parameter("init_duration", 80.0); // Duration to run unpaused during reset (seconds)
         init_duration_ = this->get_parameter("init_duration").as_double();
         
-        // 1. ZMQ Setup
-        socket_.bind("tcp://*:5555"); // '*' binds to all interfaces (equivalent to 0.0.0.0)
-        RCLCPP_INFO(this->get_logger(), "ZMQ REP socket bound to port 5555");
+        // // 1. Option A: ZMQ TCP Setup (see self.ZMQ_TRANSPORT in aas_env.py)
+        // socket_.bind("tcp://*:5555"); // '*' binds to all interfaces (equivalent to 0.0.0.0)
+        // RCLCPP_INFO(this->get_logger(), "ZMQ REP socket bound to port 5555");
+
+        // 1. Option B: ZMQ IPC Setup (see self.ZMQ_TRANSPORT in aas_env.py)
+        const char* env_instance = std::getenv("INSTANCE");
+        if (env_instance == nullptr) {
+            RCLCPP_ERROR(this->get_logger(), "Environment variable 'INSTANCE' was not set.");
+        }
+        std::string instance_id = env_instance;
+        std::string ipc_address = "ipc:///tmp/aas_zmq_sockets/bridge_inst" + instance_id + ".ipc";
+        try {
+            socket_.bind(ipc_address);
+            std::string socket_path = ipc_address.substr(6); // Set permissions to 777 (anyone can read/write) so that aas_env can connect
+            chmod(socket_path.c_str(), 0777);
+            RCLCPP_INFO(this->get_logger(), "ZMQ REP socket bound to: %s", ipc_address.c_str());
+        } catch (zmq::error_t& e) {
+            RCLCPP_ERROR(this->get_logger(), "ZMQ Bind Error: %s", e.what());
+        }
 
         // 2. ROS 2 Setup
         publisher_ = this->create_publisher<std_msgs::msg::Float64>("/action", 10);
@@ -51,11 +68,11 @@ public:
             "/clock", 10, 
             std::bind(&ZMQBridge::clock_callback, this, std::placeholders::_1));
 
-        const char* env_val = std::getenv("WORLD");
-        if (env_val == nullptr) {
+        const char* env_world = std::getenv("WORLD");
+        if (env_world == nullptr) {
             RCLCPP_ERROR(this->get_logger(), "Environment variable 'WORLD' was not set.");
         }
-        std::string world_name = env_val;
+        std::string world_name = env_world;
         service_topic_ = "/world/" + world_name + "/control";
 
         // 3. Start ZMQ Thread
@@ -177,9 +194,9 @@ private:
                         step_gazebo();
                         // D. Wait for Result
                         std::unique_lock<std::mutex> lock(clock_mutex_);
-                        received = clock_cv_.wait_for(lock, 2000ms, [this, target_time]{
+                        received = clock_cv_.wait_for(lock, 30000ms, [this, target_time]{
                             return current_sim_time_ >= target_time;
-                        }); // Wait up to 2 seconds for clock_ready_ to become true
+                        }); // Wait up to 30 seconds for clock_ready_ to become true
                     }
 
                     // 3. Send Reply

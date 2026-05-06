@@ -16,9 +16,14 @@ class AASEnv(gym.Env):
     metadata = {"render_modes": ["human", "ansi"]}
 
     def __init__(self,
-                    instance: int=0,
-                    gym_freq_hz: int=50,
-                    render_mode=None):
+            instance: int=0,
+            gym_freq_hz: int=50,
+            autopilot: str="px4",
+            camera: bool=True,
+            lidar: bool=True,
+            num_quads: int=1,
+            render_mode=None
+        ):
         super().__init__()
 
         self.GYM_FREQ_HZ = gym_freq_hz
@@ -48,22 +53,21 @@ class AASEnv(gym.Env):
         self.render_mode = render_mode
 
         # AAS Setup
-        self.AUTOPILOT = "px4"
-        self.HEADLESS = False if self.render_mode == "human" else True
-        self.CAMERA = True
-        self.LIDAR = True
+        self.HEADLESS = False if self.render_mode == "human" else True # Only display GUIs if render_mode is "human"
+        self.AUTOPILOT = autopilot
+        self.CAMERA = camera
+        self.LIDAR = lidar
+        self.NUM_QUADS = num_quads
+        self.NUM_VTOLS = 0
+        self.WORLD = "impalpable_greyness"
         #
         self.SIM_SUBNET = "10.42"
         self.AIR_SUBNET = "10.22"
         self.SIM_ID = "100"
         # self.GROUND_ID = "101" # Unused
         #
-        self.NUM_QUADS = 1
-        self.NUM_VTOLS = 0
-        self.WORLD = "impalpable_greyness"
-        #
         self.GND_CONTAINER = False # Do NOT use the ground-image to run Zenoh (nor QGC)
-        self.RTF = 15.0 # Note: RTFs > 10 can destabilize PX4/ArduPilot SITL
+        self.RTF = 0.0 # As fast as possible (capped to 15x in the simulation.yml.erb)
         self.START_AS_PAUSED = True # Start the simulation paused and manually step with gz-sim WorldControl
         self.INSTANCE = instance
         #
@@ -142,8 +146,11 @@ class AASEnv(gym.Env):
         gpu_requests = [
             DeviceRequest(count=-1, capabilities=[['gpu']]) # Replaces "--gpus all"
         ]
-        volume_binds = { # Replaces "--volume /tmp/.X11-unix:/tmp/.X11-unix:rw"
-            '/tmp/.X11-unix': {'bind': '/tmp/.X11-unix', 'mode': 'rw'}
+        self.ZMQ_IPC_SOCKET_DIR = '/tmp/aas_zmq_sockets'
+        os.makedirs(self.ZMQ_IPC_SOCKET_DIR, exist_ok=True)
+        volume_binds = {
+            '/tmp/.X11-unix': {'bind': '/tmp/.X11-unix', 'mode': 'rw'}, # Replaces "--volume /tmp/.X11-unix:/tmp/.X11-unix:rw"
+            self.ZMQ_IPC_SOCKET_DIR: {'bind': self.ZMQ_IPC_SOCKET_DIR, 'mode': 'rw'} # For ZMQ IPC sockets
         }
         device_binds = ['/dev/dri:/dev/dri:rwm'] # Replaces "--device /dev/dri"
         #
@@ -154,7 +161,7 @@ class AASEnv(gym.Env):
             name=self.SIM_CONT_NAME,
             tty=True, # Replaces -it
             detach=True,
-            auto_remove=True,
+            auto_remove=False,
             privileged=True, # Replaces --privileged
             volumes=volume_binds,
             devices=device_binds,
@@ -163,7 +170,10 @@ class AASEnv(gym.Env):
                 "DISPLAY": env_display,
                 "QT_X11_NO_MITSHM": "1",
                 "NVIDIA_DRIVER_CAPABILITIES": "all",
+                "__NV_PRIME_RENDER_OFFLOAD": "1",
+                "__GLX_VENDOR_LIBRARY_NAME": "nvidia",
                 "XDG_RUNTIME_DIR": env_xdg,
+                "GST_DEBUG": "3",
                 "AUTOPILOT": self.AUTOPILOT,
                 "HEADLESS": str(self.HEADLESS).lower(),
                 "CAMERA": str(self.CAMERA).lower(),
@@ -178,9 +188,11 @@ class AASEnv(gym.Env):
                 # "GROUND_ID": self.GROUND_ID,
                 "GND_CONTAINER": str(self.GND_CONTAINER).lower(),
                 "ROS_DOMAIN_ID": self.SIM_ID,
+                # "HOST_INPUT_GID": "", # Only necessary to let qgcuser have permissions over /dev/input/, e.g., to use a joystick
                 "GYMNASIUM" : "true",
-                "GYM_FREQ_HZ" : self.GYM_FREQ_HZ,
-                "GYM_INIT_DURATION" : self.GYM_INIT_DURATION,
+                "GYM_FREQ_HZ" : str(self.GYM_FREQ_HZ),
+                "GYM_INIT_DURATION" : str(self.GYM_INIT_DURATION),
+                "INSTANCE": str(self.INSTANCE),
             }
         )
         print(f"Connecting {self.SIM_CONT_NAME} to {self.SIM_NET_NAME}...")
@@ -206,7 +218,7 @@ class AASEnv(gym.Env):
                 name=air_cont_name,
                 tty=True, # Replaces -it
                 detach=True,
-                auto_remove=True,
+                auto_remove=False,
                 privileged=True, # Replaces --privileged
                 volumes=volume_binds,
                 devices=device_binds,
@@ -215,7 +227,10 @@ class AASEnv(gym.Env):
                     "DISPLAY": env_display,
                     "QT_X11_NO_MITSHM": "1",
                     "NVIDIA_DRIVER_CAPABILITIES": "all",
+                    "__NV_PRIME_RENDER_OFFLOAD": "1",
+                    "__GLX_VENDOR_LIBRARY_NAME": "nvidia",
                     "XDG_RUNTIME_DIR": env_xdg,
+                    "GST_DEBUG": "3",
                     "AUTOPILOT": self.AUTOPILOT,
                     "HEADLESS": str(self.HEADLESS).lower(),
                     "CAMERA": str(self.CAMERA).lower(),
@@ -246,11 +261,13 @@ class AASEnv(gym.Env):
             self.aircraft_containers.append(air_cont)
         print("Docker setup complete. All containers are running and connected.")
 
-        # ZeroMQ Setup
-        self.ZMQ_PORT = 5555
-        self.ZMQ_IP = f"{self.SIM_SUBNET}.90.{self.SIM_ID}"
+        # ZeroMQ setup
         self.zmq_context = zmq.Context()
         self.socket = self.zmq_context.socket(zmq.REQ)
+        self.ZMQ_TRANSPORT = "ipc" # "tcp" or "ipc", also uncomment the corresponding block in zeromq_bridge.cpp
+        if self.ZMQ_TRANSPORT == "tcp":
+            self.ZMQ_PORT = 5555
+            self.ZMQ_IP = f"{self.SIM_SUBNET}.90.{self.SIM_ID}"
 
     def _get_obs(self):
         return np.array([self.sim_sec, self.sim_nanosec], dtype=np.float64)
@@ -278,19 +295,26 @@ class AASEnv(gym.Env):
             raise e
         # Establish ZeroMQ connection
         self.socket = self.zmq_context.socket(zmq.REQ)
-        self.socket.setsockopt(zmq.RCVTIMEO, 10 * 1000) # 1000 ms = 1 seconds
-        self.socket.connect(f"tcp://{self.ZMQ_IP}:{self.ZMQ_PORT}")
-        print(f"ZeroMQ socket connected to {self.ZMQ_IP}:{self.ZMQ_PORT}")
+        self.socket.setsockopt(zmq.RCVTIMEO, 60 * 1000) # 1000 ms = 1 seconds, only a placeholder, will be changed during reset
+        if self.ZMQ_TRANSPORT == "tcp":
+            self.socket.connect(f"tcp://{self.ZMQ_IP}:{self.ZMQ_PORT}")
+            print(f"ZeroMQ socket connected to {self.ZMQ_IP}:{self.ZMQ_PORT}")
+        elif self.ZMQ_TRANSPORT == "ipc":
+            ipc_file = f"{self.ZMQ_IPC_SOCKET_DIR}/bridge_inst{self.INSTANCE}.ipc"
+            self.socket.connect(f"ipc://{ipc_file}")
+            print(f"ZeroMQ socket connected via IPC: {ipc_file}")
+        else:
+            raise ValueError(f"Invalid ZMQ_TRANSPORT: {self.ZMQ_TRANSPORT}")
         ###########################################################################################
         # ZeroMQ REQ/REP to the ROS2 sim ##########################################################
         ###########################################################################################
         try:
-            self.socket.setsockopt(zmq.RCVTIMEO, 120 * 1000) # Temporarily increase timeout to 120s to reset the simulation
+            self.socket.setsockopt(zmq.RCVTIMEO, 300 * 1000) # Temporarily increase timeout to 300s to reset the simulation
             reset = 9999.0 # A special action to reset the environment
             action_payload = struct.pack('d', reset) # Serialize the action 
             self.socket.send(action_payload) # Send the REQ
             reply_bytes = self.socket.recv() # Wait for the REP (synchronous block) this call will block until a reply is received or it times out
-            self.socket.setsockopt(zmq.RCVTIMEO, 10 * 1000) # Restore standard timeout (10s) for stepping
+            self.socket.setsockopt(zmq.RCVTIMEO, 60 * 1000) # Restore standard timeout (60s) for stepping
             unpacked = struct.unpack('iI', reply_bytes) # Deserialize: i = int32 (sec), I = uint32 (nanosec)
             self.sim_sec, self.sim_nanosec = unpacked
             self.start_sim_sec = float(self.sim_sec) + (float(self.sim_nanosec) * 1e-9)
@@ -362,15 +386,16 @@ class AASEnv(gym.Env):
         if self.render_mode == "ansi":
             print() # Add a newline after the final render
         
-        # Docker clean-up (auto_remove=True in the creation step handles removal after stop)
         try:
             self.simulation_container.stop()
+            self.simulation_container.remove(force=True)
             print(f"Simulation container '{self.simulation_container.name}' stopped.")
         except Exception:
             pass
         for container in self.aircraft_containers:
             try:
                 container.stop()
+                container.remove(force=True)
                 print(f"Aircraft container '{container.name}' stopped.")
             except Exception:
                 pass
