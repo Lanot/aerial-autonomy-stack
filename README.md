@@ -25,7 +25,7 @@ For an example bill of materials, read [`BOM.md`](/supplementary/BOM.md); for mo
 - **YOLO** (with ONNX GPU Runtimes) and **LiDAR** Odometry (with [KISS-ICP](https://github.com/PRBonn/kiss-icp))
 - 3D worlds for perception-based simulation
 - **Steppable** [Gymnasium environment](https://gymnasium.farama.org/index.html) and **faster-than-real-time**, **multi-instance** simulation
-- Gazebo's wind effects plugin
+- Gazebo's wind effects and [waves](https://github.com/srmainwaring/asv_wave_sim) plugins
 - **Dockerized simulation** based on [Ubuntu with CUDA and cuDNN](https://catalog.ngc.nvidia.com/orgs/nvidia/containers/cuda/tags)
 - **Dockerized deployment** based on [NVIDIA JetPack](https://catalog.ngc.nvidia.com/orgs/nvidia/containers/l4t-jetpack/tags) with [DeepStream](https://docs.nvidia.com/metropolis/deepstream/dev-guide/text/DS_Installation.html#platform-and-os-compatibility)
 - **Windows 11** compatibility *via* WSL
@@ -566,9 +566,8 @@ Clean up with:
 docker stop $(docker ps -q) && docker container prune -f && docker network prune -f
 -->
 
----
 ![waves](https://github.com/user-attachments/assets/fd757549-33bd-434d-aac6-665c255b7160)
-
+---
 > You've done a man's job, sir. I guess you're through, huh?
 
 <!--

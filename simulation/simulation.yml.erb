@@ -80,6 +80,8 @@ windows:
       model_name = is_quad ? "x500_#{sitl_instance}" : "standard_vtol_#{sitl_instance}"
       x_offset = drone[:index] * 2
       y_offset = is_quad ? x_offset : x_offset + 2
+      unsigned_32bit_ip = "#{sim_subnet}.90.#{drone_id}".split('.').inject(0) { |acc, octet| (acc << 8) + octet.to_i }
+      signed_32bit_ip = unsigned_32bit_ip > 2147483647 ? unsigned_32bit_ip - 4294967296 : unsigned_32bit_ip
     elsif autopilot == 'ardupilot'
       vehicle_config = is_quad ? '-v ArduCopter -f gazebo-iris' : '-v ArduPlane'
       model_name = is_quad ? "iris_with_ardupilot_#{drone_id}" : "alti_transition_quad_#{drone_id}"
@@ -93,7 +95,7 @@ windows:
           sleep <%= sitl_instance * 1.5 %> &&
           PX4_GZ_MODEL_POSE=<%= "#{x_offset},#{y_offset},0.75,0,0,0" %>
           PX4_SYS_AUTOSTART=<%= autostart %> ROS_DOMAIN_ID=<%= drone_id %> <%= gnd_container ? "AAS_GROUND_IP=#{sim_subnet}.90.#{ground_id}" : "" %>
-          PX4_UXRCE_DDS_NS="Drone<%= drone_id %>" PX4_UXRCE_DDS_AG_IP=<%= "#{sim_subnet}.90.#{drone_id}" %> PX4_UXRCE_DDS_PORT=8888
+          PX4_UXRCE_DDS_NS="Drone<%= drone_id %>" PX4_PARAM_UXRCE_DDS_AG_IP=<%= signed_32bit_ip %> PX4_UXRCE_DDS_PORT=8888
           /aas/github_apps/PX4-Autopilot/build/px4_sitl_default/bin/px4 -i <%= sitl_instance %>
   <% elsif autopilot == 'ardupilot' %>
   - ardu_sitl_<%= drone_id %>:

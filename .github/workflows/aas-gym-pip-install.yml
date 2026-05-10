@@ -39,11 +39,11 @@ jobs:
       - name: Check out the repository
         uses: actions/checkout@v4
 
-      - name: Set up Conda with Python 3.13
+      - name: Set up Conda with Python 3.12
         uses: conda-incubator/setup-miniconda@v3
         with:
           activate-environment: aas
-          python-version: 3.13
+          python-version: 3.12
           auto-activate: true
           use-only-tar-bz2: true 
 

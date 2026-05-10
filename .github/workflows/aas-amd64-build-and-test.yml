@@ -111,11 +111,11 @@ jobs:
           docker tag ghcr.io/jacopopan/simulation-image:${{ env.DOCKER_TAG }} simulation-image:latest
           docker images | grep latest
 
-      - name: Set up Conda with Python 3.13
+      - name: Set up Conda with Python 3.12
         uses: conda-incubator/setup-miniconda@v3
         with:
           activate-environment: aas
-          python-version: 3.13
+          python-version: 3.12
           auto-activate: true
           use-only-tar-bz2: true 
 
