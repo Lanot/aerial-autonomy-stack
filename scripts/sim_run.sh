@@ -228,13 +228,15 @@ cleanup() {
   CONTAINER_NAMES=("${SIM_CONT_NAME}" "${GND_CONT_NAME}" "aircraft-container-inst${INSTANCE}")
   echo "Stopping Docker containers (this will take a few seconds)..."
   for name in "${CONTAINER_NAMES[@]}"; do
-      CID=$(docker ps -a -q --filter name="${name}" 2>/dev/null || true)
-      if [ -n "$CID" ]; then
-          echo "Removing $name..."
-          docker stop -t 2 $CID >/dev/null 2>&1 || true
+      CIDS=$(docker ps -a -q --filter name="${name}" 2>/dev/null || true)
+      for CID in $CIDS; do
+        if [ -n "$CID" ]; then
+          CNT_NAME=$(docker inspect --format="{{.Name}}" "$CID" | sed 's/^\///')
+          echo "Removing $CNT_NAME..."
+          docker stop -t 1 $CID >/dev/null 2>&1 || true
           docker rm $CID >/dev/null 2>&1 || true
-          sleep 0.5
-      fi
+        fi
+      done
   done
   if [ -n "$DOCKER_PIDS" ]; then
     for dpid in $DOCKER_PIDS; do
