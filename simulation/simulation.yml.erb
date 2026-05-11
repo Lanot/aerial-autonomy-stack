@@ -80,8 +80,8 @@ windows:
       model_name = is_quad ? "x500_#{sitl_instance}" : "standard_vtol_#{sitl_instance}"
       x_offset = drone[:index] * 2
       y_offset = is_quad ? x_offset : x_offset + 2
-      unsigned_32bit_ip = "#{sim_subnet}.90.#{drone_id}".split('.').inject(0) { |acc, octet| (acc << 8) + octet.to_i }
-      signed_32bit_ip = unsigned_32bit_ip > 2147483647 ? unsigned_32bit_ip - 4294967296 : unsigned_32bit_ip
+      # Env var parameter injection (using prefix PX4_PARAM_*) of https://docs.px4.io/v1.16/en/advanced_config/parameter_reference#UXRCE_DDS_AG_IP
+      signed_32bit_ip = "#{sim_subnet}.90.#{drone_id}".split('.').map(&:to_i).pack('C*').unpack1('l>')
     elsif autopilot == 'ardupilot'
       vehicle_config = is_quad ? '-v ArduCopter -f gazebo-iris' : '-v ArduPlane'
       model_name = is_quad ? "iris_with_ardupilot_#{drone_id}" : "alti_transition_quad_#{drone_id}"
