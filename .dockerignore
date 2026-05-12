@@ -8,6 +8,7 @@
 github_clones/*.zip
 github_clones/*_temp/
 
-# Required by git rev-parse commands 
+# Builds requiring git metadata
 !github_clones/ardupilot/**/.git
 !github_clones/PX4-Autopilot/**/.git
+!github_clones/onnxruntime/**/.git
