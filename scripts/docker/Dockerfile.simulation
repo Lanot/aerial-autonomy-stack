@@ -245,7 +245,7 @@ RUN pip3 install --no-cache-dir --upgrade pip \
     && pip3 install --no-cache-dir --resume-retries 5 pyzmq
 
 ################################################################################
-# Stage 8 - 21+GB ##############################################################
+# Stage 8 - 22+GB ##############################################################
 ################################################################################
 FROM ros2-qgc-zenoh-gz-px4custom-ardupilot-gst-logs-waves-zmq-image AS simulation-dev-image
 

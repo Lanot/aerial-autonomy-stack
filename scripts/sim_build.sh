@@ -56,7 +56,11 @@ for repo_info in "${REPOS[@]}"; do
     echo "Clone not found, cloning ${dir}..."
     TEMP_DIR="${TARGET_DIR}_temp"     
     rm -rf "$TEMP_DIR" # Clean up any failed clone from a previous run   
-    git clone --depth 1 --branch "$branch" --recursive "$url" "$TEMP_DIR" && mv "$TEMP_DIR" "$TARGET_DIR"
+    git clone --depth 1 --shallow-submodules --branch "$branch" --recursive "$url" "$TEMP_DIR" && mv "$TEMP_DIR" "$TARGET_DIR"
+    # Dummy tag for the check in PX4-Autopilot/src/lib/version/px_update_git_header.py (fixed in v1.17 by @asherikov)
+    if [ "$dir" = "PX4-Autopilot" ]; then
+      (cd "$TARGET_DIR/platforms/nuttx/NuttX/nuttx" && git tag nuttx-0.0.0 HEAD)
+    fi
   fi
 done
 

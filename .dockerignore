@@ -1,0 +1,13 @@
+**/.git
+**/.github
+**/.gitignore
+**/__pycache__
+**/*.pyc
+
+# Ignore temporary assets
+github_clones/*.zip
+github_clones/*_temp/
+
+# Required by git rev-parse commands 
+!github_clones/ardupilot/**/.git
+!github_clones/PX4-Autopilot/**/.git
