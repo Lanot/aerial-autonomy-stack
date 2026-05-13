@@ -1,5 +1,5 @@
 diff --git a/ROMFS/px4fmu_common/init.d-posix/px4-rc.mavlink b/ROMFS/px4fmu_common/init.d-posix/px4-rc.mavlink
-index 17ef44521b..ccf6907a1b 100644
+index 17ef445..ccf6907 100644
 --- a/ROMFS/px4fmu_common/init.d-posix/px4-rc.mavlink
 +++ b/ROMFS/px4fmu_common/init.d-posix/px4-rc.mavlink
 @@ -4,6 +4,8 @@
@@ -21,21 +21,8 @@ index 17ef44521b..ccf6907a1b 100644
  # Onboard link to camera
  mavlink start -x -u $udp_onboard_payload_port_local -r 4000 -f -m onboard -o $udp_onboard_payload_port_remote
  
-diff --git a/ROMFS/px4fmu_common/init.d-posix/rcS b/ROMFS/px4fmu_common/init.d-posix/rcS
-index fed292b9d1..c73ecd55f3 100644
---- a/ROMFS/px4fmu_common/init.d-posix/rcS
-+++ b/ROMFS/px4fmu_common/init.d-posix/rcS
-@@ -317,7 +317,7 @@ then
- 	uxrce_dds_port="$PX4_UXRCE_DDS_PORT"
- fi
- 
--uxrce_dds_client start -t udp -p $uxrce_dds_port $uxrce_dds_ns
-+uxrce_dds_client start -t udp -h "${PX4_UXRCE_DDS_AG_IP:-127.0.0.1}" -p $uxrce_dds_port $uxrce_dds_ns
- 
- if param greater -s MNT_MODE_IN -1
- then
 diff --git a/Tools/upload_log.py b/Tools/upload_log.py
-index a13f1b14b0..83a816a378 100755
+index a13f1b1..83a816a 100755
 --- a/Tools/upload_log.py
 +++ b/Tools/upload_log.py
 @@ -25,10 +25,6 @@ except ImportError as e:
@@ -69,7 +56,7 @@ index a13f1b14b0..83a816a378 100755
                 'feedback': feedback, 'email': email, 'source': args.source}
  
 diff --git a/src/modules/navigator/navigator_main.cpp b/src/modules/navigator/navigator_main.cpp
-index dc53c6928d..79b604e348 100644
+index dc53c69..79b604e 100644
 --- a/src/modules/navigator/navigator_main.cpp
 +++ b/src/modules/navigator/navigator_main.cpp
 @@ -648,6 +648,10 @@ void Navigator::run()
@@ -84,7 +71,7 @@ index dc53c6928d..79b604e348 100644
  				_vtol_takeoff.setLoiterLocation(matrix::Vector2d(cmd.param5, cmd.param6));
  
 diff --git a/src/modules/navigator/vtol_takeoff.cpp b/src/modules/navigator/vtol_takeoff.cpp
-index 503a0279f9..01d8a98ba7 100644
+index 503a027..01d8a98 100644
 --- a/src/modules/navigator/vtol_takeoff.cpp
 +++ b/src/modules/navigator/vtol_takeoff.cpp
 @@ -71,8 +71,12 @@ VtolTakeoff::on_active()
@@ -103,7 +90,7 @@ index 503a0279f9..01d8a98ba7 100644
  				mission_item_to_position_setpoint(_mission_item, &pos_sp_triplet->current);
  				pos_sp_triplet->current.cruising_speed = -1.f;
 diff --git a/src/modules/navigator/vtol_takeoff.h b/src/modules/navigator/vtol_takeoff.h
-index 3ba32ce7df..162209893d 100644
+index 3ba32ce..1622098 100644
 --- a/src/modules/navigator/vtol_takeoff.h
 +++ b/src/modules/navigator/vtol_takeoff.h
 @@ -55,6 +55,7 @@ public:

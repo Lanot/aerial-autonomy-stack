@@ -218,7 +218,7 @@ RUN apt-get update && \
     && rm -rf /var/lib/apt/lists/*
 
 ################################################################################
-# Stage 7 - 17+GB ##############################################################
+# Stage 7 - 16+GB ##############################################################
 ################################################################################
 FROM ros2-px4msgs-dds-mavros-yolo-kissicp-zenoh-image AS ros2-px4msgs-dds-mavros-yolo-kissicp-zenoh-analysis-models-image
 
@@ -244,7 +244,7 @@ RUN /yolo-env/bin/python3 -c "from ultralytics import YOLO; YOLO('yolo26n.pt').e
     rm yolo26n.pt
 
 ################################################################################
-# Stage 8 - 17+GB ##############################################################
+# Stage 8 - 16+GB ##############################################################
 ################################################################################
 FROM ros2-px4msgs-dds-mavros-yolo-kissicp-zenoh-analysis-models-image AS aircraft-dev-image
 
