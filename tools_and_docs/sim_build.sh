@@ -6,11 +6,15 @@ set -e
 # Find the script's path
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 
-BUILD_ARGS=""
+# By default, skip building advanced odometry, SLAM packages
+BUILD_ADVANCED_ODOM=${EXTRAS:-false}
+
+BUILD_OPTS=""
 if [ "${CLEAN_BUILD:-false}" = "true" ]; then
-  rm -rf "${SCRIPT_DIR}/../github_clones"
-  BUILD_ARGS="--no-cache" # If CLEAN_BUILD is "true", rebuild everything from scratch
-  docker rmi aircraft-image:latest ground-image:latest simulation-image:latest || true
+  rm -rf "${SCRIPT_DIR}/../_github_clones"
+  BUILD_OPTS="--no-cache" # If CLEAN_BUILD is "true", rebuild everything from scratch
+  docker rmi transitional-ros2-image:latest transitional-ros2-qgc-image:latest \
+    aircraft-image:latest ground-image:latest simulation-image:latest || true
   docker builder prune -f # Remove all dangling build cache to free up space
 fi
 
@@ -20,23 +24,29 @@ if [ "${CLONE_ONLY:-false}" = "true" ]; then
 fi
 
 # Create a folder (ignored by git) to clone GitHub repos
-CLONE_DIR="${SCRIPT_DIR}/../github_clones"
+CLONE_DIR="${SCRIPT_DIR}/../_github_clones"
 mkdir -p "$CLONE_DIR"
 
 REPOS=( # Format: "URL;BRANCH;LOCAL_DIR_NAME"
   # Simulation image
-  "https://github.com/PX4/PX4-Autopilot.git;v1.16.2;PX4-Autopilot"
+  "https://github.com/PX4/PX4-Autopilot.git;v1.17.0;PX4-Autopilot"
   "https://github.com/ArduPilot/ardupilot.git;Copter-4.6.3;ardupilot"
   "https://github.com/ArduPilot/ardupilot_gazebo.git;main;ardupilot_gazebo"
   "https://github.com/srmainwaring/asv_wave_sim.git;master;asv_wave_sim"
   "https://github.com/PX4/flight_review.git;main;flight_review"
   # Ground image
-  "https://github.com/mavlink/c_library_v2;master;c_library_v2"
-  "https://github.com/mavlink-router/mavlink-router;master;mavlink-router"
+  "https://github.com/mavlink/c_library_v2.git;master;c_library_v2"
+  "https://github.com/mavlink-router/mavlink-router.git;master;mavlink-router"
   # Aircraft image
-  "https://github.com/PX4/px4_msgs.git;release/1.16;px4_msgs"
+  "https://github.com/PX4/px4_msgs.git;release/1.17;px4_msgs"
   "https://github.com/eProsima/Micro-XRCE-DDS-Agent.git;master;Micro-XRCE-DDS-Agent"
+  "https://github.com/Livox-SDK/Livox-SDK2.git;master;Livox-SDK2"
+  "https://github.com/Livox-SDK/livox_ros_driver2.git;master;livox_ros_driver2"
   "https://github.com/PRBonn/kiss-icp.git;main;kiss-icp"
+  "https://github.com/rpng/open_vins.git;master;open_vins"
+  "https://github.com/MIT-SPARK/spark-fast-lio.git;main;spark-fast-lio"
+  "https://github.com/MIT-SPARK/KISS-Matcher.git;main;KISS-Matcher"
+  "https://github.com/superxslam/SuperOdom.git;ros2;SuperOdom"
 )
 
 for repo_info in "${REPOS[@]}"; do
@@ -48,7 +58,7 @@ for repo_info in "${REPOS[@]}"; do
     TAGS=$(git tag --points-at HEAD)
     echo "There is a clone of ${dir} on branch: ${BRANCH}, tags: [${TAGS}]"
     # The script does not automatically pull changes for already cloned repos (as they should be on fixed tags)
-    # This avoids breaking the Docker cache but it requires manually deleting the github_clones folder for branch/tag updates
+    # This avoids breaking the Docker cache but it requires manually deleting the _github_clones folder for branch/tag updates
     # git pull
     # git submodule update --init --recursive --depth 1
     cd "$CLONE_DIR"
@@ -57,10 +67,6 @@ for repo_info in "${REPOS[@]}"; do
     TEMP_DIR="${TARGET_DIR}_temp"     
     rm -rf "$TEMP_DIR" # Clean up any failed clone from a previous run   
     git clone --depth 1 --shallow-submodules --branch "$branch" --recursive "$url" "$TEMP_DIR" && mv "$TEMP_DIR" "$TARGET_DIR"
-    # Dummy tag for the check in PX4-Autopilot/src/lib/version/px_update_git_header.py (fixed in v1.17 by @asherikov)
-    if [ "$dir" = "PX4-Autopilot" ]; then
-      (cd "$TARGET_DIR/platforms/nuttx/NuttX/nuttx" && git tag nuttx-0.0.0 HEAD)
-    fi
   fi
 done
 
@@ -91,18 +97,17 @@ if [ "$DOWNLOAD_NEEDED" = "true" ]; then
     exit 1 # Stop the script
   fi
 fi
-# Unzip quietly (-q), overwrite (-o), into the repository root directory (-d) above scripts/ to merge into simulation/
+# Unzip quietly (-q), overwrite (-o), into the repository root directory (-d) above tools_and_docs/ to merge into simulation/
 unzip -q -o "$ZIP_FILE" -d "$SCRIPT_DIR/.."
 
 if [ "$BUILD_DOCKER" = "true" ]; then
-  # The first build takes ~15' and creates a 21GB image (8GB for ros-humble-desktop with nvidia runtime, 10GB for PX4 and ArduPilot SITL)
-  docker build $BUILD_ARGS -t simulation-image -f "${SCRIPT_DIR}/docker/Dockerfile.simulation" "${SCRIPT_DIR}/.."
-
-  # The first build takes <5' and creates an 9GB image (8GB for ros-humble-desktop with nvidia runtime)
-  docker build $BUILD_ARGS -t ground-image -f "${SCRIPT_DIR}/docker/Dockerfile.ground" "${SCRIPT_DIR}/.."
-
-  # The first build takes ~10' and creates an 18GB image (8GB for ros-humble-desktop with nvidia runtime, 7GB for YOLO, ONNX)
-  docker build $BUILD_ARGS -t aircraft-image -f "${SCRIPT_DIR}/docker/Dockerfile.aircraft" "${SCRIPT_DIR}/.."
+  # Build common layers reused between images
+  docker build $BUILD_OPTS --target ros2-image -t transitional-ros2-image -f "${SCRIPT_DIR}/docker/aircraft.dockerfile" "${SCRIPT_DIR}/.."
+  docker build $BUILD_OPTS --target ros2-qgc-image -t transitional-ros2-qgc-image -f "${SCRIPT_DIR}/docker/ground.dockerfile" "${SCRIPT_DIR}/.."
+  # Build the 3 main images
+  docker build $BUILD_OPTS --build-arg BUILD_ADVANCED_ODOM="${BUILD_ADVANCED_ODOM}" -t aircraft-image -f "${SCRIPT_DIR}/docker/aircraft.dockerfile" "${SCRIPT_DIR}/.."
+  docker build $BUILD_OPTS -t ground-image -f "${SCRIPT_DIR}/docker/ground.dockerfile" "${SCRIPT_DIR}/.."
+  docker build $BUILD_OPTS -t simulation-image -f "${SCRIPT_DIR}/docker/simulation.dockerfile" "${SCRIPT_DIR}/.."
 else
   echo -e "Skipping Docker builds"
 fi

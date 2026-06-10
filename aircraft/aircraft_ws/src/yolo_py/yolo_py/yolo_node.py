@@ -14,6 +14,7 @@ import math
 import platform
 
 from vision_msgs.msg import Detection2DArray, Detection2D, BoundingBox2D, ObjectHypothesis, ObjectHypothesisWithPose
+from std_msgs.msg import Header
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
 
@@ -21,12 +22,16 @@ from cv_bridge import CvBridge
 CONF_THRESH = 0.5
 
 class YoloInferenceNode(Node):
-    def __init__(self, headless, hitl, remote_video_streams, dfov):
+    def __init__(self, camera_id, headless, hitl, remote_video_streams, hfov, ros2_frame_publisher):
         super().__init__('yolo_inference_node')
+        self.camera_id = camera_id
         self.headless = headless
         self.hitl = hitl
         self.remote_video_streams = remote_video_streams
-        self.dfov = dfov
+        self.hfov = hfov
+        self.ros2_frame_publisher = ros2_frame_publisher
+
+        self.udp_port = 5600 + self.camera_id  # 0 -> 5600, 1 -> 5601
         self.fx = None
         self.fy = None
         self.architecture = platform.machine()
@@ -44,8 +49,9 @@ class YoloInferenceNode(Node):
         self.input_name = None
         
         # Create publishers
-        self.detection_publisher = self.create_publisher(Detection2DArray, 'detections', 10)
-        # self.image_publisher = self.create_publisher(Image, 'raw_frames', 10)
+        self.detection_publisher = self.create_publisher(Detection2DArray, f'detections', 10)
+        if self.ros2_frame_publisher:
+            self.image_publisher = self.create_publisher(Image, f'camera_frames_{self.camera_id}', 10)
         self.bridge = CvBridge()
 
         # Pre-allocate reusable arrays for scaling to avoid allocation in hot loops
@@ -58,7 +64,7 @@ class YoloInferenceNode(Node):
         if self.architecture == 'x86_64':
             # # GPU pipeline: TODO NOT WORKING
             # gst_pipeline_string = (
-            #     "udpsrc port=5600 ! "
+            #     f"udpsrc port={self.udp_port} ! "
             #     "application/x-rtp, media=(string)video, encoding-name=(string)H264 ! "
             #     "rtph264depay ! "
             #     "h264parse ! "
@@ -70,7 +76,7 @@ class YoloInferenceNode(Node):
             # )
             # CPU pipeline
             gst_pipeline_string = (
-                "udpsrc port=5600 ! "
+                f"udpsrc port={self.udp_port} ! "
                 "application/x-rtp, media=(string)video, encoding-name=(string)H264 ! "
                 "rtph264depay ! "
                 "avdec_h264 ! " # Use CPU decoder
@@ -82,7 +88,7 @@ class YoloInferenceNode(Node):
             if self.hitl: # For HITL, acquire UDP stream from gz-sim
                 # GPU pipeline:
                 gst_pipeline_string = (
-                "udpsrc port=5600 ! "
+                    f"udpsrc port={self.udp_port} ! "
                     "application/x-rtp, media=(string)video, clock-rate=(int)90000, encoding-name=(string)H264 ! "
                     "rtpjitterbuffer latency=100 drop-on-latency=true ! " # Handle network jitter while adding latency (in ms)
                     "rtph264depay ! "
@@ -107,7 +113,7 @@ class YoloInferenceNode(Node):
             else: # Default, acquire CSI camera 
                 # GPU pipeline:
                 gst_pipeline_string = (
-                    "nvarguscamerasrc sensor-id=0 ! "
+                    f"nvarguscamerasrc sensor-id={self.camera_id} ! "
                     "video/x-raw(memory:NVMM), width=1280, height=720, framerate=60/1 ! "
                     "nvvidconv ! "
                     "video/x-raw(memory:NVMM), format=RGBA ! "
@@ -141,21 +147,22 @@ class YoloInferenceNode(Node):
         stream_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
         print(f"Stream Resolution: {stream_width}x{stream_height}")
 
-        # Calculate hfov, vfov, and focal lengths in pixels
-        diag_pixels = math.sqrt(stream_width**2 + stream_height**2)
-        if self.dfov <= 175.0: # Pinhole approximation for < 175.0deg FOV (simulated camera)
-            self.fx = diag_pixels / (2 * math.tan(math.radians(self.dfov) / 2))
-            self.fy = self.fx
-        else: # IMX219-200 CSI camera acquired with nvdewarper
+        # Pinhole approximation
+        if self.architecture == 'aarch64' and not self.hitl: # IMX219-200 CSI camera undistorted with nvdewarper
             vfov_rad = math.radians(98.05) # See imx219_dewarper_config.txt
             self.fy = (stream_height * 0.5) / math.tan(vfov_rad / 2.0)
             self.fx = self.fy
+        else: # Simulated camera
+            clipped_hfov = min(self.hfov, 175.0) # Clip for pinhole approximation
+            self.fx = stream_width / (2 * math.tan(math.radians(clipped_hfov) / 2))
+            self.fy = self.fx
         hfov = math.degrees(2 * math.atan(stream_width / (2 * self.fx)))
         vfov = math.degrees(2 * math.atan(stream_height / (2 * self.fy)))
-        print(f"DFOV {self.dfov}deg, HFOV {hfov:.2f}deg, VFOV {vfov:.2f}deg")
+        dfov = math.degrees(2 * math.atan(math.sqrt(stream_width**2 + stream_height**2) / (2 * self.fx)))
+        print(f"DFOV {dfov}deg, HFOV {hfov:.2f}deg, VFOV {vfov:.2f}deg")
 
         # Load YOLO model and runtime
-        # Options, from fastest to most accurate, <10MB to >100MB: yolo26n, yolo26s, yolo26m, yolo26l, yolo26x, export in Dockerfile.aircraft
+        # Options, from fastest to most accurate, <10MB to >100MB: yolo26n, yolo26s, yolo26m, yolo26l, yolo26x, export in aircraft.dockerfile
         if self.architecture == 'x86_64':
             max_dim = max(stream_width, stream_height)
             if max_dim <= 320:
@@ -193,9 +200,9 @@ class YoloInferenceNode(Node):
 
         if not self.headless:
             drone_id = os.getenv('DRONE_ID', '1')
-            self.WINDOW_NAME = f"YOLO (Aircraft {drone_id})"
+            self.WINDOW_NAME = f"YOLO (Aircraft {drone_id} - Cam {self.camera_id})"
             cv2.namedWindow(self.WINDOW_NAME, cv2.WINDOW_NORMAL)
-            cv2.moveWindow(self.WINDOW_NAME, 800+(int(drone_id)-1)*25, 5+(int(drone_id)-1)*200)
+            cv2.moveWindow(self.WINDOW_NAME, 800+(int(drone_id)-1)*25 + (self.camera_id*400), 5+(int(drone_id)-1)*200)
             # cv2.resizeWindow(self.WINDOW_NAME, 400, 200)
 
         # Start the video capture thread
@@ -217,8 +224,12 @@ class YoloInferenceNode(Node):
                 continue
 
             # Publish raw frames in ROS
-            # if not self.headless:
-            #     self.image_publisher.publish(self.bridge.cv2_to_imgmsg(frame, "bgr8"))
+            if self.ros2_frame_publisher:
+                msg_header = Header(
+                    stamp=self.get_clock().now().to_msg(),
+                    frame_id=f"camera_frame_{self.camera_id}"
+                )
+                self.image_publisher.publish(self.bridge.cv2_to_imgmsg(frame, "bgr8", header=msg_header))
             
             # Inference
             with Profiler("do_yolo (includes ONNX Runtime)"):
@@ -234,12 +245,13 @@ class YoloInferenceNode(Node):
                 if cv2.waitKey(1) & 0xFF == ord('q'):
                     break
 
-            # Only on Jetson, stream to the ground station via UDP using GStreamer on ports 5001, 5002, ..., based on DRONE_ID
+            # Only on Jetson, stream to the ground station via UDP using GStreamer
+            # On ports 5001, 5002, ..., and 5101, 5102, ..., based on DRONE_ID and self.camera_id
             if self.remote_video_streams and (self.architecture == 'aarch64'):
                 if not hasattr(self, 'gnd_stream_writer'):
                     h, w = frame.shape[:2]
                     gnd_ip = os.getenv('AIR_SUBNET', '10.22') + '.90.' + os.getenv('GROUND_ID', '101')
-                    port = 5000 + int(os.getenv('DRONE_ID', '1'))
+                    port = 5000 + int(os.getenv('DRONE_ID', '1')) + (self.camera_id * 100)
                     gst_out = (
                         "appsrc do-timestamp=true ! video/x-raw, format=BGR ! queue max-size-buffers=2 leaky=downstream ! "
                         "videoconvert ! videorate drop-only=true ! "
@@ -424,15 +436,18 @@ class Profiler:
 
 def main(args=None):
     parser = argparse.ArgumentParser(description="YOLO ROS2 Inference Node.")
+    parser.add_argument('--camera-id', type=int, default=0, help="Generic camera ID (0 for mono/left, 1 for right).")
     parser.add_argument('--headless', action='store_true', help="Run in headless mode.")
     parser.add_argument('--hitl', action='store_true', help="Open camerafrom gz-sim for HITL.")
     parser.add_argument('--remote-video-streams', action='store_true', help="Send video streams to the ground container.")
-    parser.add_argument('--dfov', type=float, default=100.0, help="Diagonal field of view in degrees.")
+    parser.add_argument('--hfov', type=float, default=100.0, help="Horizontal field of view in degrees.")
+    parser.add_argument('--ros2-frame-publisher', action='store_true', help="Publish raw frames to ROS 2.")
     cli_args, ros_args = parser.parse_known_args()
 
     rclpy.init(args=ros_args)
 
-    yolo_node = YoloInferenceNode(headless=cli_args.headless, hitl=cli_args.hitl, remote_video_streams=cli_args.remote_video_streams, dfov=cli_args.dfov)
+    yolo_node = YoloInferenceNode(camera_id=cli_args.camera_id, headless=cli_args.headless, hitl=cli_args.hitl,
+        remote_video_streams=cli_args.remote_video_streams, hfov=cli_args.hfov, ros2_frame_publisher=cli_args.ros2_frame_publisher)
     yolo_node.run_inference_loop()
     
     yolo_node.destroy_node()

@@ -1,11 +1,13 @@
 #!/bin/bash
 
-# Also check: https://github.com/JacopoPan/aerial-autonomy-stack/blob/main/supplementary/TODOs.md#maintenance-dependency-management
+# Use with:
+# $ cd aerial-autonomy-stack/tools_and_docs/
+# $ ./tests/check_requirements.sh
 
-HELP_URL="https://github.com/JacopoPan/aerial-autonomy-stack/blob/main/supplementary/REQUIREMENTS_UBUNTU.md"
+HELP_URL="https://github.com/JacopoPan/aerial-autonomy-stack/blob/main/tools_and_docs/docs/REQUIREMENTS_UBUNTU.md"
 if grep -q "Microsoft" /proc/version || grep -q "WSL" /proc/version; then
     echo "[INFO] WSL environment detected: some checks (NVIDIA Driver/CTK) may behave differently; open a GitHub issue, if necessary"
-    HELP_URL="https://github.com/JacopoPan/aerial-autonomy-stack/blob/main/supplementary/REQUIREMENTS_WSL.md"
+    HELP_URL="https://github.com/JacopoPan/aerial-autonomy-stack/blob/main/tools_and_docs/docs/REQUIREMENTS_WSL.md"
 fi
 
 if [ -f /etc/os-release ]; then
@@ -35,7 +37,7 @@ else
     echo "    Instructions: $HELP_URL"
 fi
 
-if docker run --rm hello-world &> /dev/null; then
+if docker info &> /dev/null; then
     DOCKER_VER=$(docker --version | awk '{print $3}' | tr -d ',')
     DOCKER_MAJOR=${DOCKER_VER%%.*}
 

@@ -4,11 +4,21 @@
 **/__pycache__
 **/*.pyc
 
-# Ignore temporary assets
-github_clones/*.zip
-github_clones/*_temp/
+# Keep .git folder for builds requiring git metadata
+!_github_clones/ardupilot/**/.git
+!_github_clones/PX4-Autopilot/**/.git
+!_github_clones/onnxruntime/**/.git
 
-# Builds requiring git metadata
-!github_clones/ardupilot/**/.git
-!github_clones/PX4-Autopilot/**/.git
-!github_clones/onnxruntime/**/.git
+# Ignore temporary assets
+_github_clones/*.zip
+_github_clones/*_temp/
+
+# Ignore unused PX4-Autopilot simulation resources and documentation
+_github_clones/PX4-Autopilot/Tools/simulation/gazebo-classic/
+_github_clones/PX4-Autopilot/Tools/simulation/jmavsim/
+_github_clones/PX4-Autopilot/Tools/simulation/flightgear/
+_github_clones/PX4-Autopilot/Tools/simulation/jsbsim/
+_github_clones/PX4-Autopilot/docs/
+
+# Ignore OpenVINS data
+_github_clones/open_vins/ov_data/

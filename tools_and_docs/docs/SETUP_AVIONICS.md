@@ -4,13 +4,13 @@
 >
 > Alternative hardware options include: [ARK's Jetson PAB Orin NX NDAA](https://arkelectron.com/product/ark-jetson-orin-nx-ndaa-bundle/) and [Holybro's 6X Pro](https://holybro.com/collections/flight-controllers/products/pixhawk-6x-pro) paired with [Seeed Studio's A603/A608](https://www.seeedstudio.com/Jetson-A608-Carrier-Board-for-Orin-NX-Orin-Nano-Series-p-5853.html)
 >
-> For the complete bill of materials of an `aerial-autonomy-stack`-enabled quadcopter, read [`BOM.md`](/supplementary/BOM.md)
+> For the complete bill of materials of an `aerial-autonomy-stack`-enabled quadcopter, read [`BOM.md`](/tools_and_docs/docs/BOM.md)
 
 ## Flash JetPack 6 to Jetson Orin
 
 Holybro Jetson baseboards normally ship with JetPack 5
 
-To upgrade to JetPack 6, download NVIDIA SDK Manager on the Ubuntu 22 host computer from [here](https://developer.nvidia.com/sdk-manager#installation_get_started)
+To upgrade to JetPack 6, download NVIDIA SDK Manager on an Ubuntu 22 (see [compatibility matrix](https://developer.nvidia.com/sdk-manager#host_os_comp_matrix)) host computer from [here](https://developer.nvidia.com/sdk-manager#installation_get_started)
 
 ```sh
 cd ~/Downloads
@@ -231,6 +231,18 @@ In QGroundControl -> "Vehicle Configuration" -> "Parameters" set:
 SERIAL2_BAUD 921600
 SERIAL2_OPTIONS 0
 SERIAL2_PROTOCOL MAVLink2
+
+# Stream rates for MAVROS
+SR2_ADSB         5
+SR2_EXTRA1       50
+SR2_EXTRA2       10
+SR2_EXTRA3       2
+SR2_EXT_STAT     1
+SR2_PARAMS       10
+SR2_POSITION     10
+SR2_RAW_CTRL     1
+SR2_RAW_SENS     50
+SR2_RC_CHAN      1
 ```
 
 > [!CAUTION]
@@ -275,7 +287,19 @@ BRD_SER1_RTSCTS     Auto
 SERIAL1_BAUD        57600
 SERIAL1_OPTIONS     0
 SERIAL1_PROTOCOL    MAVLink2
-# All these (except SERIAL1_PROTOCOL) are default values and tested with "Holybro SiK Telemetry Radio - Long Range; SKU: 17031"
+
+# Stream rates for the telemetry radio (potentially modified by QGC)
+SR1_ADSB         5
+SR1_EXTRA1       10
+SR1_EXTRA2       4
+SR1_EXTRA3       2
+SR1_EXT_STAT     2
+SR1_PARAMS       10
+SR1_POSITION     5
+SR1_RAW_CTRL     2
+SR1_RAW_SENS     2
+SR1_RC_CHAN      2
+# Tested with "Holybro SiK Telemetry Radio - Long Range; SKU: 17031"
 ```
 
 ## RC Input

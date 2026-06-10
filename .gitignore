@@ -4,7 +4,7 @@
 /aas-gym/ppo_agent.zip
 
 # GitHub clones of 3rd party repositories
-/github_clones/
+/_github_clones/
 
 # Meshes unpacked from simulation_resources.zip
 simulation/simulation_resources/aircraft_models/alti_transition_quad/materials/textures/AltiTransitionMap.png
