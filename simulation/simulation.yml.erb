@@ -38,10 +38,13 @@
   gym_step_size = (physics_freq_hz / gym_freq_hz).to_i
   gym_step_size = 1 if gym_step_size < 1
 
-  # Load sensor update rates from the sensor_config.yaml file
+  # Load sensor information from the sensor_config.yaml file
   require 'yaml'
   sensor_config = YAML.load_file('/aas/simulation_resources/aircraft_models/sensor_config.yaml')
   cam_update_rate = sensor_config['sensors']['camera_intrinsics']['update_rate']
+  stereo_cam = sensor_config['sensors']['camera_intrinsics']['stereo'] == true
+
+  camera_streams = stereo_cam ? [{name: '_left', port: 5600}, {name: '_right', port: 5601}] : [{name: '', port: 5600}]
 %>
 
 name: sim
@@ -66,9 +69,10 @@ windows:
           /aas/simulation_resources/simulation_worlds/_create_ardupilot_world.sh <%= num_quads %> <%= num_vtols %> <%= world %>.sdf &&
           GZ_SIM_SYSTEM_PLUGIN_PATH=/aas/github_apps/ardupilot_gazebo/build:$GZ_SIM_SYSTEM_PLUGIN_PATH 
           <% end %>
-          GZ_SIM_RESOURCE_PATH=$GZ_SIM_RESOURCE_PATH:/aas/simulation_resources/aircraft_models:/aas/simulation_resources/simulation_worlds 
+          GZ_SIM_SYSTEM_PLUGIN_PATH=$GZ_SIM_SYSTEM_PLUGIN_PATH:/aas/github_ws/install/lib GZ_GUI_PLUGIN_PATH=$GZ_GUI_PLUGIN_PATH:/aas/github_ws/src/asv_wave_sim/gz-waves/src/gui/plugins/waves_control/build
+          GZ_SIM_RESOURCE_PATH=$GZ_SIM_RESOURCE_PATH:/aas/simulation_resources/aircraft_models:/aas/simulation_resources/simulation_worlds:/aas/github_ws/src/asv_wave_sim/gz-waves-models/models:/aas/github_ws/src/asv_wave_sim/gz-waves-models/world_models:/aas/github_ws/src/asv_wave_sim/gz-waves-models/worlds
           GZ_SIM_PHYSICS_ENGINE_PATH=$GZ_SIM_PHYSICS_ENGINE_PATH:/usr/lib/x86_64-linux-gnu/gz-physics-7/engine-plugins/
-          gz sim -v2 <%= start_as_paused ? '' : '-r' %> <%= headless ? '-s' : '' %> <%= autopilot == 'px4' ? "#{world}.sdf" : "populated_ardupilot.sdf" %>   
+          gz sim -v2 <%= start_as_paused ? '' : '-r' %> <%= headless ? '-s' : '' %> <%= autopilot == 'px4' ? "#{world}.sdf" : "populated_ardupilot.sdf" %>
 
   <% drones.each_with_index do |drone, sitl_instance| %>
   <% 
@@ -79,6 +83,8 @@ windows:
       model_name = is_quad ? "x500_#{sitl_instance}" : "standard_vtol_#{sitl_instance}"
       x_offset = drone[:index] * 2
       y_offset = is_quad ? x_offset : x_offset + 2
+      # Env var parameter injection (using prefix PX4_PARAM_*) of https://docs.px4.io/v1.17/en/advanced_config/parameter_reference#UXRCE_DDS_AG_IP
+      signed_32bit_ip = "#{sim_subnet}.90.#{drone_id}".split('.').map(&:to_i).pack('C*').unpack1('l>')
     elsif autopilot == 'ardupilot'
       vehicle_config = is_quad ? '-v ArduCopter -f gazebo-iris' : '-v ArduPlane'
       model_name = is_quad ? "iris_with_ardupilot_#{drone_id}" : "alti_transition_quad_#{drone_id}"
@@ -92,7 +98,7 @@ windows:
           sleep <%= sitl_instance * 1.5 %> &&
           PX4_GZ_MODEL_POSE=<%= "#{x_offset},#{y_offset},0.75,0,0,0" %>
           PX4_SYS_AUTOSTART=<%= autostart %> ROS_DOMAIN_ID=<%= drone_id %> <%= gnd_container ? "AAS_GROUND_IP=#{sim_subnet}.90.#{ground_id}" : "" %>
-          PX4_UXRCE_DDS_NS="Drone<%= drone_id %>" PX4_UXRCE_DDS_AG_IP=<%= "#{sim_subnet}.90.#{drone_id}" %> PX4_UXRCE_DDS_PORT=8888
+          PX4_UXRCE_DDS_NS="Drone<%= drone_id %>" PX4_PARAM_UXRCE_DDS_AG_IP=<%= signed_32bit_ip %> PX4_UXRCE_DDS_PORT=8888
           /aas/github_apps/PX4-Autopilot/build/px4_sitl_default/bin/px4 -i <%= sitl_instance %>
   <% elsif autopilot == 'ardupilot' %>
   - ardu_sitl_<%= drone_id %>:
@@ -104,20 +110,18 @@ windows:
           <%= vehicle_config %> --model JSON
           -I <%= sitl_instance %> --sysid <%= drone_id %>
           --speedup <%= speedup %>
+          --mavproxy-args="--streamrate=-1"
           --add-param-file=/aas/simulation_resources/aircraft_models/<%= model_name %>/ardupilot-4.6.params
           -l $(python3 /aas/simulation_resources/patches/extract_spherical_coords.py /aas/simulation_resources/simulation_worlds/<%= world %>.sdf)
-          --out=udp:<%= "#{sim_subnet}.90.#{drone_id}" %>:8888
-          <% if gnd_container %>
-          --out=udp:<%= "#{sim_subnet}.90.#{ground_id}" %>:<%= 16540 + sitl_instance %>
-          <% else %>
-          --out=udp:127.0.0.1:<%= 14550 + sitl_instance %>
-          <% end %>
+          -A "--serial1=udpclient:<%= gnd_container ? "#{sim_subnet}.90.#{ground_id}:#{16540 + sitl_instance}" : "127.0.0.1:#{14550 + sitl_instance}" %> --serial2=udpclient:<%= "#{sim_subnet}.90.#{drone_id}" %>:8888"
   <% end %>
         <% if camera %>
+        <% camera_streams.each do |stream| %>
         - >
           /aas/simulation_resources/comms/gz_gst_bridge/build/gz_gst_bridge
-          /world/<%= world %>/model/<%= model_name %>/model/simple_camera/link/mono_cam/base_link/sensor/imager/image
-          <%= "#{sim_subnet}.90.#{drone_id}" %> 5600 <%= cam_update_rate %>
+          /world/<%= world %>/model/<%= model_name %>/model/simple_camera/link/mono_cam/base_link/sensor/imager<%= stream[:name] %>/image
+          <%= "#{sim_subnet}.90.#{drone_id}" %> <%= stream[:port] %> <%= cam_update_rate %>
+        <% end %>
         - >
           ROS_DOMAIN_ID=<%= drone_id %> ros2 run ros_gz_bridge parameter_bridge /world/<%= world %>/model/<%= model_name %>/joint_state@sensor_msgs/msg/JointState[gz.msgs.Model
           --ros-args -r /world/<%= world %>/model/<%= model_name %>/joint_state:=/gimbal_state
@@ -130,11 +134,6 @@ windows:
         - >
           ROS_DOMAIN_ID=<%= drone_id %> ros2 run ros_gz_bridge parameter_bridge /model/<%= model_name %>/gimbal_3d/yaw_cmd@std_msgs/msg/Float64]gz.msgs.Double
           --ros-args -r /model/<%= model_name %>/gimbal_3d/yaw_cmd:=gimbal_yaw_cmd
-        # (optional/alternative) Use ros_gz_bridge to republish the camera frames into ROS2 and use tools like $ ros2 run rqt_image_view rqt_image_view
-        # - >
-        #   ROS_DOMAIN_ID=<%= drone_id %> ros2 run ros_gz_bridge parameter_bridge
-        #   /world/<%= world %>/model/<%= model_name %>/model/simple_camera/link/mono_cam/base_link/sensor/imager/image@sensor_msgs/msg/Image[gz.msgs.Image
-        #   --ros-args -r /world/<%= world %>/model/<%= model_name %>/model/simple_camera/link/mono_cam/base_link/sensor/imager/image:=/camera_frames
         <% end %>
         <% if lidar %>
         - >

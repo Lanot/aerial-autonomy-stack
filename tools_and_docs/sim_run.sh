@@ -8,6 +8,7 @@ AUTOPILOT="${AUTOPILOT:-px4}" # Options: px4 (default), ardupilot
 HEADLESS="${HEADLESS:-false}" # Options: true, false (default)
 CAMERA="${CAMERA:-true}" # Options: true (default), false
 LIDAR="${LIDAR:-true}" # Options: true (default), false 
+ODOM="${ODOM:-none}" # Options: none (default), openvins, fastlio, superodom
 #
 SIM_SUBNET="${SIM_SUBNET:-10.42}" # Simulation subnet (default = 10.42) Note: this is overridden if INSTANCE != 0
 AIR_SUBNET="${AIR_SUBNET:-10.22}" # Inter-vehicle subnet (default = 10.22) Note: this is overridden if INSTANCE != 0
@@ -37,7 +38,7 @@ SIM_CONT_NAME="simulation-container-inst${INSTANCE}"
 GND_CONT_NAME="ground-container-inst${INSTANCE}"
 
 # Detect the environment (Ubuntu/GNOME, WSL, etc.)
-if command -v gnome-terminal >/dev/null 2>&1 && [ -n "$XDG_CURRENT_DESKTOP" ]; then
+if echo "$XDG_CURRENT_DESKTOP" | grep -qi "gnome"; then
   DESK_ENV="gnome"
 elif grep -qEi "(Microsoft|WSL)" /proc/version &> /dev/null; then
   DESK_ENV="wsl"
@@ -184,7 +185,7 @@ if [[ "$HITL" == "false" ]]; then
         --volume /tmp/.X11-unix:/tmp/.X11-unix:rw --device /dev/dri --gpus all \
         --env DISPLAY=$DISPLAY --env QT_X11_NO_MITSHM=1 --env NVIDIA_DRIVER_CAPABILITIES=all --env XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR --env GST_DEBUG=3 \
         --env __NV_PRIME_RENDER_OFFLOAD=1 --env __GLX_VENDOR_LIBRARY_NAME=nvidia \
-        --env AUTOPILOT=$AUTOPILOT --env HEADLESS=$HEADLESS --env CAMERA=$CAMERA --env LIDAR=$LIDAR \
+        --env AUTOPILOT=$AUTOPILOT --env HEADLESS=$HEADLESS --env CAMERA=$CAMERA --env LIDAR=$LIDAR --env ODOM=$ODOM \
         --env DRONE_TYPE=$drone_type --env DRONE_ID=$DRONE_ID \
         --env SIMULATED_TIME=true \
         --env SIM_SUBNET=$SIM_SUBNET --env AIR_SUBNET=$AIR_SUBNET --env SIM_ID=$SIM_ID --env GROUND_ID=$GROUND_ID \
@@ -226,16 +227,18 @@ read -n 1 -s # Wait for user input
 cleanup() {
   DOCKER_PIDS=$(pgrep -f "docker run.*inst${INSTANCE}" 2>/dev/null || true)
   CONTAINER_NAMES=("${SIM_CONT_NAME}" "${GND_CONT_NAME}" "aircraft-container-inst${INSTANCE}")
-  CONTAINERS_TO_STOP=""
-  for name in "${CONTAINER_NAMES[@]}"; do
-      CONTAINERS_TO_STOP+=$(docker ps -a -q --filter name="${name}" 2>/dev/null || true)
-      CONTAINERS_TO_STOP+=" "
-  done
   echo "Stopping Docker containers (this will take a few seconds)..."
-  if [ -n "$CONTAINERS_TO_STOP" ]; then
-      echo "$CONTAINERS_TO_STOP" | xargs docker stop -t 5
-  fi
-  sleep 1 # Prevent Xorg crashes
+  for name in "${CONTAINER_NAMES[@]}"; do
+      CIDS=$(docker ps -a -q --filter name="${name}" 2>/dev/null || true)
+      for CID in $CIDS; do
+        if [ -n "$CID" ]; then
+          CNT_NAME=$(docker inspect --format="{{.Name}}" "$CID" | sed 's/^\///')
+          echo "Removing $CNT_NAME..."
+          docker stop -t 1 $CID >/dev/null 2>&1 || true
+          docker rm $CID >/dev/null 2>&1 || true
+        fi
+      done
+  done
   if [ -n "$DOCKER_PIDS" ]; then
     for dpid in $DOCKER_PIDS; do
       PARENT_PID=$(ps -o ppid= -p $dpid 2>/dev/null | tr -d ' ') # Determine process pids with a parent pid

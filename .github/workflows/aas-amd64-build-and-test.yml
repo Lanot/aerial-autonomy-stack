@@ -111,11 +111,11 @@ jobs:
           docker tag ghcr.io/jacopopan/simulation-image:${{ env.DOCKER_TAG }} simulation-image:latest
           docker images | grep latest
 
-      - name: Set up Conda with Python 3.13
+      - name: Set up Conda with Python 3.12
         uses: conda-incubator/setup-miniconda@v3
         with:
           activate-environment: aas
-          python-version: 3.13
+          python-version: 3.12
           auto-activate: true
           use-only-tar-bz2: true 
 
@@ -133,7 +133,7 @@ jobs:
 
       - name: Run aas-gym test 1
         run: |
-          python3 ./scripts/gym_run.py --mode speedup --num_quads 1 --no-camera --no-lidar --autopilot px4
+          python3 ./tools_and_docs/gym_run.py --mode speedup --num_quads 1 --no-camera --no-lidar --autopilot px4
 
       - name: Safety cleanup between tests
         if: always()
@@ -145,4 +145,4 @@ jobs:
 
       - name: Run aas-gym test 2
         run: |
-          python3 ./scripts/gym_run.py --mode speedup --num_quads 1 --no-camera --no-lidar --autopilot ardupilot
+          python3 ./tools_and_docs/gym_run.py --mode speedup --num_quads 1 --no-camera --no-lidar --autopilot ardupilot
