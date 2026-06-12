@@ -1,0 +1,37 @@
+<?xml version="1.0" ?>
+<sdf version="1.6">
+    <model name="usa_ny_governors_island">
+      <static>true</static>
+      <pose>280.35 65.62 -1.04 0 0 0</pose>
+
+      <link name="ground">
+        <collision name="collision">
+          <geometry>
+            <heightmap>
+              <uri>model://usa_ny_governors_island/textures/usa_ny_governors_island_height_map.tif</uri>
+              <size>1336.34 1387.64 13.6</size>
+              <pos>280.35 65.62  -1.04</pos>
+            </heightmap>
+          </geometry>
+        </collision>
+        <visual name="ground_visual">
+          <geometry>
+            <heightmap>
+              <use_terrain_paging>false</use_terrain_paging>
+              <uri>model://usa_ny_governors_island/textures/usa_ny_governors_island_height_map.tif</uri>
+              <size>1336.34 1387.64 13.6</size>
+              <pos>280.35 65.62 -1.04</pos>
+              <sampling>2</sampling>
+              <texture>
+                  <diffuse>model://usa_ny_governors_island/textures/usa_ny_governors_island_aerial.png</diffuse>
+                  <normal>model://usa_ny_governors_island/textures/usa_ny_governors_island_aerial.png</normal>
+                  <size>1336.34 1387.64 13.6</size>
+                  <pos>280.35 65.62 -1.04</pos>
+              </texture>
+
+            </heightmap>
+          </geometry>
+        </visual>
+      </link>
+    </model>
+</sdf>
