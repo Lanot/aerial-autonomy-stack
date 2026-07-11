@@ -2,7 +2,7 @@
 
 > These instructions are tested on a [Holybro Jetson Baseboard](https://holybro.com/products/pixhawk-jetson-baseboard) with Pixhawk 6X and NVIDIA Orin NX 16GB on an [X650](https://holybro.com/collections/multicopter-kit/products/x650-development-kit)
 >
-> Alternative hardware options include: [ARK's Jetson PAB Orin NX NDAA](https://arkelectron.com/product/ark-jetson-orin-nx-ndaa-bundle/) and [Holybro's 6X Pro](https://holybro.com/collections/flight-controllers/products/pixhawk-6x-pro) paired with [Seeed Studio's A603/A608](https://www.seeedstudio.com/Jetson-A608-Carrier-Board-for-Orin-NX-Orin-Nano-Series-p-5853.html)
+> Alternative hardware options include: [ARK's Jetson PAB Orin NX NDAA Bundle](https://arkelectron.com/product/ark-jetson-orin-nx-ndaa-bundle/),  [ARK's Jetson PAB V3 Orin NX NDAA Bundle](https://arkelectron.com/product/ark-jetson-pab-v3-orin-nx-ndaa-bundle/), and a [Holybro's 6X Pro](https://holybro.com/collections/flight-controllers/products/pixhawk-6x-pro) or [CubePilot Cube Orange+](https://www.cubepilot.org/#/cube/features) paired with a [Seeed Studio's A603](https://www.seeedstudio.com/A603-Carrier-Board-for-Jetson-Orin-NX-Nano-p-5635.html) or [A608](https://www.seeedstudio.com/Jetson-A608-Carrier-Board-for-Orin-NX-Orin-Nano-Series-p-5853.html) Jetson carrier
 >
 > For the complete bill of materials of an `aerial-autonomy-stack`-enabled quadcopter, read [`BOM.md`](/tools_and_docs/docs/BOM.md)
 
@@ -29,6 +29,7 @@ sdkmanager                          # Log in with your https://developer.nvidia.
 - Power-off, put the board out of recovery mode, disconnect the USB-C cable, and power-on again
 - With a screen, mouse, and keyboard connected to the Jetson basedboad, log in, finish the configuration
 - Select an appropriate "Power Mode" (e.g. MAXN or 25W)
+- Under "Settings" -> "Users", enable "Automatic Login"
 
 <!--
 - [PX4 documentation](https://github.com/PX4/PX4-Autopilot/blob/main/docs/en/companion_computer/holybro_pixhawk_jetson_baseboard.md#flashing-the-jetson-board)
@@ -306,4 +307,4 @@ SR1_RC_CHAN      2
 
 RC IN is the [bottom-left 5-pin port on the Jetson Baseboard](https://docs.holybro.com/autopilot/pixhawk-baseboards/pixhawk-jetson-baseboard/ports-pinout#rc-in-port)
 
-Use it to connect an RC receiver (e.g., [Radiomaster R81 V2](https://radiomasterrc.com/products/r81-receiver), [[user manual](https://cdn.shopify.com/s/files/1/0609/8324/7079/files/R81_Manual.pdf)]) and bind it to an RC (e.g., [Radiomaster Boxer 4in1](https://radiomasterrc.com/products/boxer-radio-controller-m2?variant=46486352232640), [[user manual](https://cdn.shopify.com/s/files/1/0701/8066/7584/files/BOXER_A1.9.pdf)])
+Use it to connect an RC receiver (e.g., [Radiomaster R86C V2](https://radiomasterrc.com/products/r86c-receiver), [[user manual](https://cdn.shopify.com/s/files/1/0609/8324/7079/files/R86C.pdf)]) and bind it to an RC (e.g., [Radiomaster Boxer 4in1](https://radiomasterrc.com/products/boxer-radio-controller-m2?variant=46486352232640), [[user manual](https://cdn.shopify.com/s/files/1/0701/8066/7584/files/BOXER_A1.9.pdf)])

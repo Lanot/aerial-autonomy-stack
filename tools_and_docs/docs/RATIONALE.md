@@ -29,8 +29,9 @@ This is the challenge—and good sport—of **vertical/full-stack integration** 
 
 ## Presentations and Papers
 
-- ["On the System Design Reality Gap" (January 2026) Aerial Robotics Meeting](https://docs.google.com/presentation/d/1Sz0d7WPWNwgCM3Q49Nnq1mvkSwPyK_CCQ7viHxO_Ucs)
-- ["aerial-autonomy-stack—a Faster-than-real-time, Autopilot-agnostic, ROS2 Framework to Simulate and Deploy Perception-based Drones" (June 2026) International Conference on Unmanned Aircraft Systems (ICUAS)](https://arxiv.org/abs/2602.07264)
+- Open Robotics Aerial Robotics Meeting: ["On the System Design Reality Gap"](https://docs.google.com/presentation/d/1Sz0d7WPWNwgCM3Q49Nnq1mvkSwPyK_CCQ7viHxO_Ucs) (January 22, 2026)
+- Paper: ["aerial-autonomy-stack—a Faster-than-real-time, Autopilot-agnostic, ROS2 Framework to Simulate and Deploy Perception-based Drones"](https://arxiv.org/abs/2602.07264) (2026) International Conference on Unmanned Aircraft Systems (ICUAS), Corfu, Greece
+- Slides: [`aerial-autonomy-stack`](https://www.dropbox.com/scl/fi/2gzki29sqrd67k3g0ctbz/icuas2026.pptx?rlkey=chflf9twnk1n6dptfx2huxa7o&st=kglsygkk&dl=0) in ICUAS 2026 regular session on "UAS Testbeds" (June 17, 2026)
 
 ## Related Work
 
@@ -38,9 +39,10 @@ A summary of existing multi-drone flight stacks can be found in [Table II of thi
 
 - *Universidad Politécnica de Madrid (UPM)*'s [`aerostack2`](https://github.com/aerostack2/aerostack2) (multicopter-only)
 - *Czech Technical University in Prague (CTU)*'s [`mrs_uav_system`](https://github.com/ctu-mrs/mrs_uav_system) (multicopter-only)
-- *Norwegian University of Science and Technology (NTNU)*'s [`unified_autonomy_stack`](https://github.com/ntnu-arl/unified_autonomy_stack) (GNSS-denied, multi-frame)
+- *Norwegian University of Science and Technology (NTNU)*'s [`unified_autonomy_stack`](https://github.com/ntnu-arl/unified_autonomy_stack) (multi-frame, high-level control-only)
 - *Technische Universität (TU) Berlin*'s [`crazyswarm2`](https://github.com/IMRCLab/crazyswarm2) (indoor, crazyflie-only)
 - *Peking University*'s [`XTDrone`](https://github.com/robin-shaun/XTDrone) (PX4-only)
+- *Carnegie Mellon University (CMU)*'s [`AirStack`](https://github.com/castacks/AirStack) (marked "only for internal usage")
 
 A summary of aerial robotics simulators can be found in [Table IV of this paper](https://arxiv.org/pdf/2311.02296), these include:
 

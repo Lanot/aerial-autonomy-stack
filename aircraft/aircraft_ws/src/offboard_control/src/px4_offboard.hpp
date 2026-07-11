@@ -13,6 +13,8 @@
 #include <string>
 #include <sstream>
 #include <iomanip>
+#include <unordered_map>
+#include <functional>
 
 #include <rclcpp/clock.hpp>
 #include <rclcpp/parameter.hpp>
@@ -29,6 +31,7 @@
 #include <px4_msgs/msg/vehicle_local_position.hpp>
 #include <px4_msgs/msg/airspeed_validated.hpp>
 #include <px4_msgs/msg/vehicle_odometry.hpp>
+#include <px4_msgs/msg/vehicle_status.hpp>
 
 #include <px4_msgs/msg/offboard_control_mode.hpp>
 #include <px4_msgs/msg/vehicle_attitude_setpoint.hpp>
@@ -55,14 +58,17 @@ private:
     const GeographicLib::Geodesic& geod = GeographicLib::Geodesic::WGS84();
 
     // Node variables
-    std::atomic<int> offboard_flag_;
+    bool offboard_active_;
+    std::string active_controller_name_;
     int offboard_loop_frequency;
     std::atomic<int> offboard_loop_count_;
     std::atomic<int> last_offboard_loop_count_;
     rclcpp::Time last_offboard_rate_check_time_;
+    int own_id_;
 
     // Callback groups
-    rclcpp::CallbackGroup::SharedPtr callback_group_timer_;
+    rclcpp::CallbackGroup::SharedPtr callback_group_printout_;
+    rclcpp::CallbackGroup::SharedPtr callback_group_offboard_control_;
     rclcpp::CallbackGroup::SharedPtr callback_group_subscriber_;
 
     // Node timers
@@ -74,6 +80,7 @@ private:
     rclcpp::Subscription<VehicleLocalPosition>::SharedPtr vehicle_local_position_sub_;
     rclcpp::Subscription<VehicleOdometry>::SharedPtr vehicle_odometry_sub_;
     rclcpp::Subscription<AirspeedValidated>::SharedPtr airspeed_validated_sub_;
+    rclcpp::Subscription<VehicleStatus>::SharedPtr vehicle_status_sub_;
 
     // Offboard flag subscriber
     rclcpp::Subscription<autopilot_interface_msgs::msg::OffboardFlag>::SharedPtr offboard_flag_sub_;
@@ -89,13 +96,16 @@ private:
     double x_, y_, z_, heading_, vx_, vy_, vz_;
     double ref_lat_, ref_lon_, ref_alt_;
     int pose_frame_, velocity_frame_;
+    // float to match PX4 float32 VehicleOdometry
     std::array<float, 3> position_;
     std::array<float, 4> q_;
     std::array<float, 3> velocity_;
     std::array<float, 3> angular_velocity_;
     double true_airspeed_m_s_;
-    std::array<float, 3> kiss_position_;
-    std::array<float, 4> kiss_q_;
+    int vehicle_type_;
+    bool is_vtol_, is_vtol_tailsitter_;
+    std::array<double, 3> kiss_position_;
+    std::array<double, 4> kiss_q_;
     ground_system_msgs::msg::SwarmObs::SharedPtr ground_tracks_;
     vision_msgs::msg::Detection2DArray::SharedPtr yolo_detections_;
 
@@ -119,14 +129,24 @@ private:
     void local_position_callback(const VehicleLocalPosition::SharedPtr msg);
     void odometry_callback(const VehicleOdometry::SharedPtr msg);
     void airspeed_callback(const AirspeedValidated::SharedPtr msg);
+    void status_callback(const VehicleStatus::SharedPtr msg);
 
     // Offboard flag call back
-    void offboard_flag_callaback(const autopilot_interface_msgs::msg::OffboardFlag::SharedPtr msg);
+    void offboard_flag_callback(const autopilot_interface_msgs::msg::OffboardFlag::SharedPtr msg);
 
     // Callbacks for perception subscribers
     void ground_tracks_callback(const ground_system_msgs::msg::SwarmObs::SharedPtr msg);
     void yolo_detections_callback(const vision_msgs::msg::Detection2DArray::SharedPtr msg);
     void kiss_odometry_callback(const nav_msgs::msg::Odometry::SharedPtr msg);
+
+    // Controller map and controllers
+    using ControllerFunction = std::function<void(OffboardControlMode&)>;
+    std::unordered_map<std::string, ControllerFunction> controller_map_;
+    ControllerFunction active_controller_func_;
+    void att_ref_test(OffboardControlMode& mode);
+    void ctbr_ref_test(OffboardControlMode& mode);
+    void traj_ref_test(OffboardControlMode& mode);
+    void traj_ref_predictive_rendezvous(OffboardControlMode& mode);
 };
 
 #endif // OFFBOARD_CONTROL__PX4_OFFBOARD_HPP_

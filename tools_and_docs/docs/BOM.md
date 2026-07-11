@@ -2,6 +2,8 @@
 
 > The following is an example of the hardware components necessary to build a quadcopter supporting **ALL** of `aerial-autonomy-stack`'s capabilities, including perception and multi-robot communication/swarming for about 6,000 USD
 
+![aircraft](https://github.com/user-attachments/assets/f7cf6a62-c452-4dd7-8cf5-e03fcc5ed027)
+
 ## Example AAS Quadcopter
 
 | #   | Part                                  | Description                                            | Cost (USD) | Link         |
@@ -11,14 +13,14 @@
 | 3   | Holybro Fixed Carbon Fiber GPS mount  | GNSS module support                                    | 12         | [URL][mount]
 | 4   | Holybro Microhard Telemetry Radio*    | Point-to-multipoint telemetry (1 ground + 1 per drone) | 449        | [URL][telem]
 | 5   | RadioMaster Boxer RC CC2500           | Radio controller                                       | 100        | [URL][rc]
-| 6   | RadioMaster R81 V2 Receiver           | Receiver for the radio controller                      | 18         | [URL][rec]
+| 6   | RadioMaster R86C V2 Receiver          | Receiver for the radio controller                      | 28         | [URL][rec]
 | 7   | Matek Power Module PM12S-4A           | 5V and 12V supply for Doodle and Jetson                | 20         | [URL][matek]
 | 8   | Tattu G-Tech 6S 8000mAh 25C 22.2V     | Lipo battery pack with XT60                            | 162        | [URL][batt]
 | 9   | Pixhawk Jetson Baseboard Bundle       | NVIDIA Orin NX 16GB + SSD + Pixhawk 6X + CSI ArduCam   | 1450       | [URL][jetson]
 | 10  | ASIX AX88772A USB2.0 Ethernet Adapter | 1 for `AIR_SUBNET`, 1 for `SIM_SUBNET` (for HITL only) | 18         | [URL][eth]
 | 11  | Doodle Labs RM-2450-11N3              | 2.4GHz Nano radio module (1 ground + 1 per drone)      | 1700       | [URL][doot1]
 | 12  | Doodle Labs EK-2450-11N3              | Nano carrier/evaluation kit (1 ground + 1 per drone)   | 290        | [URL][doot2]
-| 13  | DJI Livox Mid-360**                   | LiDAR sensor                                           | 749        | [URL][liv]
+| 13  | DJI Livox Mid-360S**                  | LiDAR sensor                                           | 679        | [URL][liv]
 | 14  | Livox three-wire aviation connector** | Power and ethernet connector for the LiDAR             | 89         | [URL][liv2]
 
 > *For a single drone, one can alternatively use the point-to-point [SiK telemetry radio][telem2] (89)
@@ -39,25 +41,26 @@ flowchart TB
         Orin <-->|"TELEM2 / ETH"| 6X
     end
     
-
     subgraph Doodle_Lab_Radio ["Doodle Lab Radio"]
         direction TB
         EvalKit[Evaluation Kit]
         RadioMod[Radio Module]
         EvalKit <-->|" "| RadioMod
     end
+
+    ESCs[4x Tekko32 F4 45A]
+    Jetson_Baseboard -->|"FMU PWM1-4"| ESCs
     
     Telem[Telemetry Radio]
-
     Doodle_Lab_Radio ~~~ Telem
 
     GPS[GPS Module]
-    Lidar[Livox 360]
-    Camera[CSI ArduCam]
+    Lidar[Livox Mid-360S]
+    Camera[CSI IMX219 ArduCam]
 
-    RC_Rx[R81 Receiver]
+    RC_Rx[R86C Receiver]
     RC[RadioMaster Boxer RC]
-    RC_Rx <-->|"bind"| RC
+    RC_Rx <-->|"bind <br/> FrSky X D16"| RC
 
     Batt -- "24V" --> PDB
     PDB -- "24V" --> Matek
@@ -79,10 +82,9 @@ flowchart TB
 
     Matek -- "12V" --> Lidar
 
-    %%%%%%%%%%
-    linkStyle 3 stroke:teal,stroke-width:3px,stroke-dasharray: 8 4;
-    linkStyle 4,5,6,7,16,18 stroke:red,stroke-width:4px;    
-    linkStyle 8,9,10,14,15,17 stroke:blue,stroke-width:3px;
+    linkStyle 4 stroke:teal,stroke-width:3px,stroke-dasharray: 8 4;
+    linkStyle 5,6,7,8,17,19 stroke:red,stroke-width:4px;
+    linkStyle 9,10,11,16,16,18 stroke:blue,stroke-width:3px;
 ```
 
 [kit]:https://holybro.com/collections/x650-kits/products/x650-kits?variant=43994378240189
@@ -91,25 +93,25 @@ flowchart TB
 [telem]:https://holybro.com/collections/telemetry-radios/products/microhard-radio?variant=42522025590973
 [telem2]:https://holybro.com/collections/telemetry-radios/products/sik-telemetry-radio-1w?variant=45094904856765
 [rc]:https://radiomasterrc.com/collections/boxer-radio/products/boxer-radio-controller-m2?variant=46486352298176
-[rec]:https://holybro.com/collections/rc-radio-transmitter-receiver/products/radiomaster-r81-receiver
+[rec]:https://holybro.com/products/radiomaster-r86c-receiver
 [matek]:https://www.mateksys.com/?portfolio=pm12s-4a
 [batt]:https://genstattu.com/tattu-8000mah-22-2v-25c-6s1p-lipo-battery-pack-with-xt60-plug.html
 [jetson]:https://holybro.com/collections/flight-controllers/products/pixhawk-jetson-baseboard?variant=44636223439037
 [eth]:https://www.amazon.ca/TRENDnet-TU2-ET100-USB-Mbps-Adapter/dp/B00007IFED/
-[liv]:https://store.dji.com/ca/product/livox-mid-360?vid=130851
+[liv]:https://store.dji.com/ca/product/livox-mid-360s?vid=219111
 [liv2]:https://store.dji.com/ca/product/livox-three-wire-aviation-connector?vid=117441
 [doot1]:https://www.mouser.ca/ProductDetail/Doodle-Labs/RM-2450-11N3?qs=ulEaXIWI0c91eCn7VRB%2FpA%3D%3D
 [doot2]:https://www.mouser.ca/ProductDetail/Doodle-Labs/EK-2450-11N3?qs=ulEaXIWI0c%2FLOqPeL4gNgg%3D%3D
 
-## Holybro X650 Parameters
+## Holybro X650 with 6X Autopilot Parameters
 
-Autopilot parameters for the Holybro X650 kit
+Non-default parameters for the Holybro X650 kit; for full `.params` files examples, check folder [`params/`](/tools_and_docs/docs/params/)
 
 <!--
 ### PX4 Configuration
 
 ```sh
-TODO
+TBD
 ```
 -->
 
@@ -117,7 +119,7 @@ TODO
 
 ```sh
 # GPS module
-GPSx_TYPE           1               # Auto, GPS1_TYPE or GPS2_TYPE depending on the JST connector used on the Jetson Baseboard
+GPS1_TYPE           1               # Auto, here GPS1 refers to the primary GPS, not the 6X port; if connecting to the GPS2 port (SERIAL4) remember to set SERIAL3_PROTOCOL (GPS1 port) to -1/None
 
 # DShot ESCs (Tekko32 F4 45A)
 SERVOx_FUNCTION     0               # Disabled, for SERVO1 to 4, these are channels 1 to 4 on IO PWM
@@ -134,7 +136,8 @@ SERVOx_TRIM         1000            # For SERVO9 to 12
 
 # Motor thrust curve exponent (T-Motor MN4014 KV330s with Gemfan 1555 propellers)
 MOT_THST_EXPO       0.7             # For 15in props, 0.0 is linear, 1.0 is second order curve
-# (optional) lower MOT_SPIN_ARM and MOT_SPIN_MIN from the 0.1 and 0.15 defaults to 0.05, 0.1
+MOT_SPIN_ARM        0.05            # Lower spin speed when armed
+# (optional) lower MOT_SPIN_MIN from the 0.15 defaults to 0.1
 
 # Limit RPY acceleration (in centidegrees per square second)
 ATC_ACCEL_P_MAX     52000           # Between slow and very slow
@@ -156,13 +159,47 @@ ATC_RAT_RLL_FLTD    10              # Roll axis rate controller derivative frequ
 # Harmonic notch filter
 INS_HNTCH_ENABLE    1               # Enable (reboot to set the other parameters)
 INS_HNTCH_MODE      1               # Throttle tracking
-INS_HNTCH_REF       0.4             # Anchor point (should match the measured MOT_THST_HOVER)
+INS_HNTCH_REF       0.4             # Anchor point
 INS_HNTCH_FREQ      40              # Base frequency, lower than the default 80 for the X650
 INS_HNTCH_BW        20              # Half of INS_HNTCH_FREQ
 # Check INS_HNTCH_OPTS is set to 0
 
-# In QGC -> Vehicle Configuration -> Radio, calibrate the Radiomaster Boxer RC
-# In QGC -> Vehicle Configuration -> Flight Modes, set one switch for Stabilized/AltHold/Loiter, one for RTL
-# In QGC -> Vehicle Configuration -> Safety, set battery and general failsafes, RTL settings
+# Speed limits
+LOIT_SPEED          500             # 5m/s maximum horizontal speed in LOITER
+PILOT_SPEED_UP      250             # 2.5m/s climb rate in LOITER
+PILOT_SPEED_DN      150             # 1.5m/s descent rate in LOITER
+WPNAV_SPEED         500             # 5m/s maximum horizontal speed in AUTO/GUIDED
+WPNAV_SPEED_UP      250             # 2.5m/s climb rate in AUTO/GUIDED
+WPNAV_SPEED_DN      150             # 1.5m/s descent rate in AUTO/GUIDED
+RTL_SPEED           500             # 5m/s maximum horizontal speed in RTL
+ACRO_Y_RATE         120             # 120 deg/s maximum yaw rate
+
+# Compass configuration
+# The F9P external IST8310 compass should be automatically recognized with ID 6589xx on COMPASS_DEV_ID, auto-populating COMPASS_EXTERNAL, COMPASS_ORIENT
+# The 6X internal BMM150 compass should be automatically recognized with ID 331777 on COMPASS_DEV_ID2
+# Note: the order of the detected COMPASS_DEV_ID[2-8] varies and could become corrupted
+# To force a fresh reassignment of COMPASS_DEV_ID[2-8], backup the parameters, set FORMAT_VERSION 0, reboot, load the parameters, and re-calibate
+COMPASS_USE3        0               # Disable non-existent COMPASS_USE3, assuming the IST8310 and BMM150 are on COMPASS_DEV_ID and COMPASS_DEV_ID2, respectively
+COMPASS_EXTERNAL    1               # External, assuming the IST8310/6589xx is recognized on COMPASS_DEV_ID
+COMPASS_ORIENT      6               # Yaw270, assuming the IST8310/6589xx is recognized on COMPASS_DEV_ID, see: https://docs.holybro.com/gps-and-rtk-system/f9p-h-rtk-series/ardupilot-ist8310-compass-orientation
+# In QGC -> Vehicle Configuration -> Sensors -> Sensor Settings, set the external compass as Priority 1 (COMPASS_PRIO1_ID) and the internal compass as Priority 2 (COMPASS_PRIO2_ID)
+
+# Failsafes
+FS_THR_ENABLE       1               # Commands an RTL if the RC link is lost, requires configuring "Failsafe No pulses" on the Boxer RC using protocol FrSky X D16 with the R86C receiver
+FS_GCS_ENABLE       1               # Commands an RTL if the QGC link is lost
+FS_GCS_TIMEOUT      5               # The timeout before the GCS failsafe engages
+FS_OPTIONS          0               # Never ignore the failsafes (not in AUTO/GUIDED, nor in pilot-controlled modes)
+BATT_LOW_VOLT       22.0            # Triggers the low failsafe at 3.6V per cell (Tattu G-Tech 6S 8000mAh 25C 22.2V)
+BATT_LOW_MAH        1600            # Triggers the low failsafe when 20% of 8000mAh (Tattu G-Tech 6S 8000mAh 25C 22.2V)
+BATT_FS_LOW_ACT     2               # Commands an RTL when either of the low thresholds is breached
+BATT_CRT_VOLT       21.0            # Triggers the critical failsafe at 3.5V per cell (Tattu G-Tech 6S 8000mAh 25C 22.2V)
+BATT_CRT_MAH        800             # Triggers the critical failsafe when 10% of 8000mAh (Tattu G-Tech 6S 8000mAh 25C 22.2V)
+BATT_FS_CRT_ACT     1               # Commands an immediate LAND when either of the low thresholds is breached
+RSSI_TYPE           2               # Sets the Received Signal Strength Indicator (RSSI) source to an RC Channel PWM value
+RSSI_CHANNEL        16              # Tells the flight controller to read Channel 16 for the RSSI data (when using the FrSky X D16 protocol)
+
+# In QGC -> Vehicle Configuration -> Radio, calibrate the Radiomaster Boxer RC (revise FS_THR_VALUE, if necessary)
+# In QGC -> Vehicle Configuration -> Flight Modes, set one switch for Loiter/AltHold/Stabilized, one for RTL
+# In QGC -> Vehicle Configuration -> Flight Safety, set RTL settings
 # In QGC -> Vehicle Configuration -> Sensors, calibrate accelerometer, level horizon, and compass (outdoors)
 ```
