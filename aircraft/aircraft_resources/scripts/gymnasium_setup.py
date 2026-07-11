@@ -1,4 +1,3 @@
-import time
 import argparse
 
 import rclpy
@@ -29,7 +28,7 @@ class GymnasiumSetup(Node):
         goal_msg = Takeoff.Goal()
         goal_msg.takeoff_altitude = 40.0
         goal_msg.vtol_transition_heading = 330.0
-        goal_msg.vtol_loiter_nord = 100.0
+        goal_msg.vtol_loiter_north = 100.0
         goal_msg.vtol_loiter_east = 100.0
         goal_msg.vtol_loiter_alt = 60.0
 
@@ -54,7 +53,7 @@ class GymnasiumSetup(Node):
         self.wait_for_server(self.offboard_client, 'Offboard')
 
         goal_msg = Offboard.Goal()
-        goal_msg.offboard_setpoint_type = 1 # 1 is PX4 rates reference
+        goal_msg.controller_name = "ctbr-test" # See px4_offboard.cpp
         goal_msg.max_duration_sec = 1200.0 # 20' of offboard mode
 
         self.get_logger().info('Sending Offboard Goal...')

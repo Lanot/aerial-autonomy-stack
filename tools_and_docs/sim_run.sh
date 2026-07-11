@@ -8,7 +8,7 @@ AUTOPILOT="${AUTOPILOT:-px4}" # Options: px4 (default), ardupilot
 HEADLESS="${HEADLESS:-false}" # Options: true, false (default)
 CAMERA="${CAMERA:-true}" # Options: true (default), false
 LIDAR="${LIDAR:-true}" # Options: true (default), false 
-ODOM="${ODOM:-none}" # Options: none (default), openvins, fastlio, superodom
+ODOM="${ODOM:-none}" # Options: none (default), openvins, fastlio, superodom, mimosa
 #
 SIM_SUBNET="${SIM_SUBNET:-10.42}" # Simulation subnet (default = 10.42) Note: this is overridden if INSTANCE != 0
 AIR_SUBNET="${AIR_SUBNET:-10.22}" # Inter-vehicle subnet (default = 10.22) Note: this is overridden if INSTANCE != 0
@@ -17,14 +17,17 @@ GROUND_ID="${GROUND_ID:-101}" # Last byte of the simulation container IP (defaul
 #
 NUM_QUADS="${NUM_QUADS:-1}" # Number of quadcopters (default = 1)
 NUM_VTOLS="${NUM_VTOLS:-0}" # Number of VTOLs (default = 0)
+NUM_TAILS="${NUM_TAILS:-0}" # Number of tailsitters (default = 0)
 WORLD="${WORLD:-impalpable_greyness}" # Options: impalpable_greyness (default), apple_orchard, shibuya_crossing, swiss_town
 #
-DEV="${DEV:false}" # Options: true, false (default)
+DEV="${DEV:-false}" # Options: true, false (default)
 HITL="${HITL:-false}" # Options: true, false (default)
 GND_CONTAINER="${GND_CONTAINER:-true}" # Options: true (default), false
 RTF="${RTF:-1.0}" # Real-time factor (default = 1.0), set to <=0.0 for as fast as possible execution
 START_AS_PAUSED="${START_AS_PAUSED:-false}" # Options: true, false (default)
 INSTANCE="${INSTANCE:-0}" # Integer ID to make docker network/container names unique as well as offsetting the second byte of the subnets (default = 0)
+# Note: the analysis/plotting env variable is used by this script on cleanup and NOT passed to any container
+PLOT="${PLOT:-false}" # Options: true, false (default)
 # Set unique subnets and container/network names based on INSTANCE
 SIM_BYTE_1=$(echo "$SIM_SUBNET" | cut -d'.' -f1)
 SIM_BYTE_2=$(echo "$SIM_SUBNET" | cut -d'.' -f2)
@@ -43,26 +46,28 @@ if echo "$XDG_CURRENT_DESKTOP" | grep -qi "gnome"; then
 elif grep -qEi "(Microsoft|WSL)" /proc/version &> /dev/null; then
   DESK_ENV="wsl"
 else
-  echo "Unsupported environment" 
+  echo "Untested (non-GNOME, non-WSL) desktop environment, exiting."
   exit 1
 fi
 echo "Desktop environment: $DESK_ENV"
 
+# Find the script's path
+SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+
 # In dev mode, resources and workspaces are mounted from the host
 if [[ "$DEV" == "true" ]]; then
-  SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-  #
   DEV_SIM_OPTS="--entrypoint /bin/bash"
-  DEV_SIM_OPTS+=" -v ${SCRIPT_DIR}/../simulation/simulation_resources/:/aas/simulation_resources:cached"
+  DEV_SIM_OPTS+=" -v ${SCRIPT_DIR}/../simulation/simulation_ws/src:/aas/simulation_ws/src:cached"
+  DEV_SIM_OPTS+=" -v ~/Downloads/:/aas/mounted_downloads_folder:cached"
   #
   DEV_GND_OPTS="--entrypoint /bin/bash"
-  DEV_GND_OPTS+=" -v ${SCRIPT_DIR}/../ground/ground_resources/:/aas/ground_resources:cached"
   DEV_GND_OPTS+=" -v ${SCRIPT_DIR}/../ground/ground_ws/src:/aas/ground_ws/src:cached"
+  DEV_GND_OPTS+=" -v ~/Downloads/:/aas/mounted_downloads_folder:cached"
   #
   DEV_AIR_OPTS="--entrypoint /bin/bash"
-  DEV_AIR_OPTS+=" -v ${SCRIPT_DIR}/../aircraft/aircraft_resources/:/aas/aircraft_resources:cached"
   DEV_AIR_OPTS+=" -v ${SCRIPT_DIR}/../aircraft/aircraft_ws/src:/aas/aircraft_ws/src:cached"
   DEV_AIR_OPTS+=" -v ${SCRIPT_DIR}/../ground/ground_ws/src/ground_system_msgs:/aas/aircraft_ws/src/ground_system_msgs:cached"
+  DEV_AIR_OPTS+=" -v ~/Downloads/:/aas/mounted_downloads_folder:cached"
 fi
 
 # Create docker networks for SITL
@@ -120,7 +125,7 @@ DOCKER_CMD="docker run -it --rm \
   --env DISPLAY=$DISPLAY --env QT_X11_NO_MITSHM=1 --env NVIDIA_DRIVER_CAPABILITIES=all --env XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR --env GST_DEBUG=3 \
   --env __NV_PRIME_RENDER_OFFLOAD=1 --env __GLX_VENDOR_LIBRARY_NAME=nvidia \
   --env AUTOPILOT=$AUTOPILOT --env HEADLESS=$HEADLESS --env CAMERA=$CAMERA --env LIDAR=$LIDAR \
-  --env NUM_QUADS=$NUM_QUADS --env NUM_VTOLS=$NUM_VTOLS --env WORLD=$WORLD \
+  --env NUM_QUADS=$NUM_QUADS --env NUM_VTOLS=$NUM_VTOLS --env NUM_TAILS=$NUM_TAILS --env WORLD=$WORLD \
   --env SIMULATED_TIME=true --env RTF=$RTF --env START_AS_PAUSED=$START_AS_PAUSED \
   --env SIM_SUBNET=$SIM_SUBNET --env GROUND_ID=$GROUND_ID \
   --env GND_CONTAINER=$GND_CONTAINER \
@@ -153,7 +158,7 @@ if [[ "$HITL" == "false" ]]; then
       --env DISPLAY=$DISPLAY --env QT_X11_NO_MITSHM=1 --env NVIDIA_DRIVER_CAPABILITIES=all --env XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR --env GST_DEBUG=3 \
       --env __NV_PRIME_RENDER_OFFLOAD=1 --env __GLX_VENDOR_LIBRARY_NAME=nvidia \
       --env HEADLESS=$HEADLESS \
-      --env NUM_QUADS=$NUM_QUADS --env NUM_VTOLS=$NUM_VTOLS \
+      --env NUM_QUADS=$NUM_QUADS --env NUM_VTOLS=$NUM_VTOLS --env NUM_TAILS=$NUM_TAILS \
       --env SIMULATED_TIME=true \
       --env ROS_DOMAIN_ID=$GROUND_ID \
       --env HOST_INPUT_GID=$(getent group input | cut -d: -f3) \
@@ -209,11 +214,13 @@ if [[ "$HITL" == "false" ]]; then
   launch_aircraft_containers "quad" $NUM_QUADS
   # Launch the VTOL containers
   launch_aircraft_containers "vtol" $NUM_VTOLS
+  # Launch the Tailsitter containers
+  launch_aircraft_containers "tail" $NUM_TAILS
 
   if [[ "$GND_CONTAINER" == "true" ]]; then
     sleep 2.0 # Once all containers are up, connect ground and aircraft containers to the air network
     docker network connect --ip=${AIR_SUBNET}.90.$GROUND_ID $AIR_NET_NAME $GND_CONT_NAME
-    for i in $(seq 1 $((NUM_QUADS + NUM_VTOLS))); do
+    for i in $(seq 1 $((NUM_QUADS + NUM_VTOLS + NUM_TAILS))); do
       docker network connect --ip=${AIR_SUBNET}.90.$i $AIR_NET_NAME "aircraft-container-inst${INSTANCE}_${i}"
     done
   fi
@@ -225,16 +232,36 @@ read -n 1 -s # Wait for user input
 
 # Cleanup function
 cleanup() {
-  DOCKER_PIDS=$(pgrep -f "docker run.*inst${INSTANCE}" 2>/dev/null || true)
+  # Copy autopilot SITL logs to the host
+  PLOT_DIR="${SCRIPT_DIR}/logs/postmortem_$(date +%Y-%m-%d_%H-%M-%S)"
+  NUM_DRONES=$((NUM_QUADS + NUM_VTOLS + NUM_TAILS))
+  echo "Copying the latest log of $NUM_DRONES drone(s) to $PLOT_DIR..."
+  mkdir -p "$PLOT_DIR" 2>/dev/null || echo "Could not create $PLOT_DIR"
+  for i in $(seq 1 $NUM_DRONES); do
+    if [ "$AUTOPILOT" == "ardupilot" ]; then
+      LOG_GLOB="/aas/ardu_sitl_${i}/logs/*.BIN" # sim_vehicle.py runs in /aas/ardu_sitl_${i}, see simulation.yml.erb
+    else
+      LOG_GLOB="/aas/github_apps/PX4-Autopilot/build/px4_sitl_default/rootfs/$((i - 1))/log/*/*.ulg" # px4 -i is 0-based
+    fi
+    LATEST_LOG=$(docker exec "$SIM_CONT_NAME" bash -c "ls -t $LOG_GLOB 2>/dev/null | head -n 1" || true)
+    if [ -n "$LATEST_LOG" ]; then
+      docker cp "${SIM_CONT_NAME}:${LATEST_LOG}" "${PLOT_DIR}/drone_${i}.${LATEST_LOG##*.}" >/dev/null 2>&1 \
+        && echo "Copied drone $i log: $(basename "$LATEST_LOG")" || echo "Could not copy the log of drone $i"
+    else
+      echo "No log found for drone $i"
+    fi
+  done
+  # Cleanup
+  DOCKER_PIDS=$(pgrep -f "docker run.*inst${INSTANCE}([^0-9]|$)" 2>/dev/null || true)
   CONTAINER_NAMES=("${SIM_CONT_NAME}" "${GND_CONT_NAME}" "aircraft-container-inst${INSTANCE}")
   echo "Stopping Docker containers (this will take a few seconds)..."
   for name in "${CONTAINER_NAMES[@]}"; do
-      CIDS=$(docker ps -a -q --filter name="${name}" 2>/dev/null || true)
+      CIDS=$(docker ps -a -q --filter name="^${name}(_.*)?$" 2>/dev/null || true)
       for CID in $CIDS; do
         if [ -n "$CID" ]; then
           CNT_NAME=$(docker inspect --format="{{.Name}}" "$CID" | sed 's/^\///')
           echo "Removing $CNT_NAME..."
-          docker stop -t 1 $CID >/dev/null 2>&1 || true
+          docker stop -t 1 $CID >/dev/null 2>&1 || true # If needed, increase timeout -t to avoid NVIDIA driver panic
           docker rm $CID >/dev/null 2>&1 || true
         fi
       done
@@ -251,9 +278,12 @@ cleanup() {
   docker network rm $SIM_NET_NAME 2>/dev/null && echo "Removed $SIM_NET_NAME" || echo "Network $SIM_NET_NAME not found or already removed"
   docker network rm $AIR_NET_NAME 2>/dev/null && echo "Removed $AIR_NET_NAME" || echo "Network $AIR_NET_NAME not found or already removed"
   if command -v xhost >/dev/null 2>&1; then
-    xhost -local:docker >/dev/null
+    sleep 1 && xhost -local:docker >/dev/null
   fi
   echo "All-clear"
+  if [[ "$PLOT" == "true" ]]; then
+    python3 "${SCRIPT_DIR}/plot_logs.py" "$PLOT_DIR" || echo "Plotting failed: missing logs or dependencies (matplotlib, pymavlink, pyulog, pymap3d), use 'conda activate aas'"
+  fi
 }
 # Set trap to cleanup on script interruption (Ctrl+C, etc.)
 trap cleanup EXIT INT TERM

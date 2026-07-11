@@ -3,27 +3,36 @@
 # Exit immediately if a command exits with a non-zero status
 set -e
 
+# Enable starting the aircraft container from SSH
+if [[ -n "$SSH_CLIENT" ]]; then
+  export DISPLAY=":0"
+  export XAUTHORITY="/run/user/1000/gdm/Xauthority"
+  echo "SSH session detected, setting DISPLAY=$DISPLAY and XAUTHORITY=$XAUTHORITY"
+  AAS_SSH_OPTS="--volume $XAUTHORITY:$XAUTHORITY:ro --env XAUTHORITY=$XAUTHORITY"
+fi
+
 # Set up the aircraft
 AUTOPILOT="${AUTOPILOT:-px4}" # Options: px4 (default), ardupilot
 HEADLESS="${HEADLESS:-true}" # Options: true (default), false 
 CAMERA="${CAMERA:-true}" # Options: true (default), false
 LIDAR="${LIDAR:-true}" # Options: true (default), false
-ODOM="${ODOM:-none}" # Options: none (default), openvins, fastlio, superodom
+ODOM="${ODOM:-none}" # Options: none (default), openvins, fastlio, superodom, mimosa
 #
 SIM_SUBNET="${SIM_SUBNET:-10.42}" # Simulation subnet (default = 10.42)
 AIR_SUBNET="${AIR_SUBNET:-10.22}" # Inter-vehicle subnet (default = 10.22)
 SIM_ID="${SIM_ID:-100}" # Last byte of the simulation container IP (default = 100)
 GROUND_ID="${GROUND_ID:-101}" # Last byte of the simulation container IP (default = 101)
 #
-DRONE_TYPE="${DRONE_TYPE:-quad}" # Options: quad (default), vtol
+DRONE_TYPE="${DRONE_TYPE:-quad}" # Options: quad (default), vtol, tail
 DRONE_ID="${DRONE_ID:-1}" # Id of aircraft (default = 1)
 #
-DEV="${DEV:false}" # Options: true, false (default)
+DEV="${DEV:-false}" # Options: true, false (default)
 HITL="${HITL:-false}" # Options: true, false (default)
 GND_CONTAINER="${GND_CONTAINER:-true}" # Options: true (default), false
 # Only used by ground-container
 NUM_QUADS="${NUM_QUADS:-1}" # Number of quadcopters (default = 1)
 NUM_VTOLS="${NUM_VTOLS:-0}" # Number of VTOLs (default = 0)
+NUM_TAILS="${NUM_TAILS:-0}" # Number of tailsitters (default = 0)
 
 GROUND="${GROUND:-false}" # Options: true, false (default)
 if [[ "$GROUND" == "true" ]]; then
@@ -35,16 +44,17 @@ if [[ "$GROUND" == "true" ]]; then
     --volume /tmp/.X11-unix:/tmp/.X11-unix:rw \
     --env DISPLAY=$DISPLAY --env QT_X11_NO_MITSHM=1 --env XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR \
     --env HEADLESS=false \
-    --env NUM_QUADS=$NUM_QUADS --env NUM_VTOLS=$NUM_VTOLS \
+    --env NUM_QUADS=$NUM_QUADS --env NUM_VTOLS=$NUM_VTOLS --env NUM_TAILS=$NUM_TAILS \
     --env SIMULATED_TIME=$HITL \
     --env ROS_DOMAIN_ID=$GROUND_ID \
     --env AIR_SUBNET=$AIR_SUBNET \
-    --env HOST_INPUT_GID=$(getent group input | cut -d: -f3) \
+    --env HOST_INPUT_GID="$(getent group input | cut -d: -f3)" \
     --env REMOTE_VIDEO_STREAMS=true \
     --env SSH_CONNECTIONS=true \
     --net=host \
     --privileged \
     --name ground-container \
+    --volume ~/Downloads/:/aas/mounted_downloads_folder \
     ground-image
   exit 0
 fi
@@ -53,9 +63,9 @@ fi
 if [[ "$DEV" == "true" ]]; then
   SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
   DEV_OPTS="--entrypoint /bin/bash"
-  DEV_OPTS+=" -v ${SCRIPT_DIR}/../aircraft/aircraft_resources/:/aas/aircraft_resources:cached"
   DEV_OPTS+=" -v ${SCRIPT_DIR}/../aircraft/aircraft_ws/src:/aas/aircraft_ws/src:cached"
   DEV_OPTS+=" -v ${SCRIPT_DIR}/../ground/ground_ws/src/ground_system_msgs:/aas/aircraft_ws/src/ground_system_msgs:cached"
+  DEV_OPTS+=" -v ~/Downloads/:/aas/mounted_downloads_folder:cached"
 fi
 
 if [ "$HEADLESS" = "false" ]; then
@@ -94,7 +104,9 @@ docker run $DOCKER_RUN_FLAGS \
   --net=host \
   --privileged \
   --name aircraft-container_$DRONE_ID \
+  --volume ~/Downloads/:/aas/mounted_downloads_folder \
   ${DEV_OPTS} \
+  ${AAS_SSH_OPTS} \
   aircraft-image
 
 # Check ONNX runtimes

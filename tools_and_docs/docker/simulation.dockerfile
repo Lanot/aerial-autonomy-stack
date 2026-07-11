@@ -176,14 +176,13 @@ FROM ros2-qgc-gz-px4custom-ardupilot-gst-logs-waves-zmq-image AS simulation-dev-
 COPY simulation/simulation_ws/src /aas/simulation_ws/src
 WORKDIR /aas/simulation_ws
 RUN rosdep update
-RUN rosdep install --from-paths src/ --ignore-src --rosdistro humble -y && apt clean && rm -rf /var/lib/apt/lists/*
+RUN apt update && rosdep install --from-paths src/ --ignore-src --rosdistro humble -y && apt clean && rm -rf /var/lib/apt/lists/*
 # Explicitly use bash, not sh, to source and build the workspace
 RUN bash -c "source /opt/ros/humble/setup.bash && (source /aas/github_ws/install/setup.bash || true) && colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release"
 
 # Copy resources and configuration files from this repository
 COPY simulation/simulation_resources/ /aas/simulation_resources
-RUN chmod +x /aas/simulation_resources/aircraft_models/_create_ardupilot_models.sh \
-    && chmod +x /aas/simulation_resources/simulation_worlds/_create_ardupilot_world.sh
+RUN chmod +x /aas/simulation_resources/patches/create_ardupilot_drones_and_world.sh
 
 # Copy QGC configuration (only for GND_CONTAINER=false)
 COPY ground/ground_resources/patches/QGroundControl.ini /home/qgcuser/.config/QGroundControl/QGroundControl.ini
@@ -193,10 +192,6 @@ WORKDIR /aas/simulation_resources/comms/gz_gst_bridge
 RUN mkdir build && cd build \
     && cmake .. -DCMAKE_BUILD_TYPE=Release \
     && make
-
-# Create sensor and aircraft SDFs based on sensor_config.yaml parameters
-WORKDIR /aas/simulation_resources/aircraft_models/
-RUN ruby _create_sdfs_using_sensor_config.rb
 
 # Source the workspaces
 RUN echo "source /aas/github_ws/install/setup.bash" >> /root/.bashrc \
