@@ -21,7 +21,7 @@ ODOM="${ODOM:-none}" # Options: none (default), openvins, fastlio, superodom, mi
 SIM_SUBNET="${SIM_SUBNET:-10.42}" # Simulation subnet (default = 10.42)
 AIR_SUBNET="${AIR_SUBNET:-10.22}" # Inter-vehicle subnet (default = 10.22)
 SIM_ID="${SIM_ID:-100}" # Last byte of the simulation container IP (default = 100)
-GROUND_ID="${GROUND_ID:-101}" # Last byte of the simulation container IP (default = 101)
+GROUND_ID="${GROUND_ID:-101}" # Last byte of the ground container IP (default = 101)
 #
 DRONE_TYPE="${DRONE_TYPE:-quad}" # Options: quad (default), vtol, tail
 DRONE_ID="${DRONE_ID:-1}" # Id of aircraft (default = 1)
@@ -29,16 +29,32 @@ DRONE_ID="${DRONE_ID:-1}" # Id of aircraft (default = 1)
 DEV="${DEV:-false}" # Options: true, false (default)
 HITL="${HITL:-false}" # Options: true, false (default)
 GND_CONTAINER="${GND_CONTAINER:-true}" # Options: true (default), false
-# Only used by ground-container
+
+# Only used by ground-container (i.e., if GROUND is true)
+GROUND="${GROUND:-false}" # Options: true, false (default)
 NUM_QUADS="${NUM_QUADS:-1}" # Number of quadcopters (default = 1)
 NUM_VTOLS="${NUM_VTOLS:-0}" # Number of VTOLs (default = 0)
 NUM_TAILS="${NUM_TAILS:-0}" # Number of tailsitters (default = 0)
 
-GROUND="${GROUND:-false}" # Options: true, false (default)
+# Find the script's path
+SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+
+# Check env variables
+source "${SCRIPT_DIR}/tests/check_env_vars.sh"
+check_enum AUTOPILOT px4 ardupilot
+check_enum ODOM none openvins fastlio superodom mimosa
+check_enum DRONE_TYPE quad vtol tail
+check_int DRONE_ID 1 99
+for v in HEADLESS CAMERA LIDAR DEV HITL GND_CONTAINER GROUND; do check_enum "$v" true false; done
+for v in NUM_QUADS NUM_VTOLS NUM_TAILS; do check_int "$v" 0 99; done
+for v in SIM_ID GROUND_ID; do check_int "$v" 100 101; done
+print_envvars
+
 if [[ "$GROUND" == "true" ]]; then
-  # This is a bit hacky, but allows to use the deploy_run.sh script for the ground container
+  # This is a bit hacky, but allows using the deploy_run.sh script for the ground container
   # Without GPU requirements: --device /dev/dri --gpus all --env NVIDIA_DRIVER_CAPABILITIES=all
   # Forcing HEADLESS to false, opening REMOTE_VIDEO_STREAMS and SSH_CONNECTIONS
+  # GND_TELEM_BAUD=115200 for use with point-to-multipoint Microhard telemetry
   xhost +local:docker # Grant access to the X server
   docker run -it --rm \
     --volume /tmp/.X11-unix:/tmp/.X11-unix:rw \
@@ -51,6 +67,7 @@ if [[ "$GROUND" == "true" ]]; then
     --env HOST_INPUT_GID="$(getent group input | cut -d: -f3)" \
     --env REMOTE_VIDEO_STREAMS=true \
     --env SSH_CONNECTIONS=true \
+    --env GND_TELEM_BAUD=115200 \
     --net=host \
     --privileged \
     --name ground-container \
@@ -61,7 +78,6 @@ fi
 
 # In dev mode, resources and workspaces are mounted from the host
 if [[ "$DEV" == "true" ]]; then
-  SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
   DEV_OPTS="--entrypoint /bin/bash"
   DEV_OPTS+=" -v ${SCRIPT_DIR}/../aircraft/aircraft_ws/src:/aas/aircraft_ws/src:cached"
   DEV_OPTS+=" -v ${SCRIPT_DIR}/../ground/ground_ws/src/ground_system_msgs:/aas/aircraft_ws/src/ground_system_msgs:cached"
